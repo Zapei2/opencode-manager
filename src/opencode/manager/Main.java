@@ -4,16 +4,27 @@ import com.formdev.flatlaf.FlatLightLaf;
 import opencode.manager.db.Database;
 import opencode.manager.ui.MainWindow;
 import javax.swing.*;
+import java.awt.*;
 
 public class Main {
     public static void main(String[] args) {
         FlatLightLaf.setup();
-        UIManager.put("Button.arc", 8);
+        UIManager.put("Button.arc", 10);
+        UIManager.put("Button.margin", new Insets(4, 12, 4, 12));
+        UIManager.put("Button.font", new Font("SansSerif", Font.PLAIN, 12));
         UIManager.put("Component.arrowType", "chevron");
+        UIManager.put("Table.rowHeight", 34);
+        UIManager.put("Table.showHorizontalLines", false);
+        UIManager.put("Table.showVerticalLines", false);
+        UIManager.put("Table.intercellSpacing", new Dimension(0, 0));
+        UIManager.put("TableHeader.font", new Font("SansSerif", Font.BOLD, 11));
+        UIManager.put("TableHeader.height", 28);
         UIManager.put("Tree.rowHeight", 28);
-        UIManager.put("Table.rowHeight", 30);
+        UIManager.put("Tree.font", new Font("SansSerif", Font.PLAIN, 13));
+        UIManager.put("ScrollBar.width", 8);
+        UIManager.put("ScrollBar.thumbArc", 8);
+        UIManager.put("ScrollBar.thumbInsets", new Insets(2, 2, 2, 2));
         UIManager.put("TabbedPane.tabHeight", 32);
-        UIManager.put("ScrollBar.width", 10);
         UIManager.put("SplitPaneDivider.style", "grip");
 
         SwingUtilities.invokeLater(() -> {
