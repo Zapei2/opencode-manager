@@ -22,8 +22,8 @@ public class Main {
         UIManager.put("Table.intercellSpacing", new Dimension(0, 0));
         UIManager.put("TableHeader.font", new Font("SansSerif", Font.BOLD, 13));
         UIManager.put("TableHeader.height", 32);
-        UIManager.put("Tree.rowHeight", 30);
-        UIManager.put("Tree.font", new Font("SansSerif", Font.PLAIN, 14));
+        UIManager.put("Tree.rowHeight", 32);
+        UIManager.put("Tree.font", new Font("SansSerif", Font.PLAIN, 16));
         UIManager.put("ScrollBar.width", 10);
         UIManager.put("ScrollBar.thumbArc", 10);
         UIManager.put("ScrollBar.thumbInsets", new Insets(2, 2, 2, 2));

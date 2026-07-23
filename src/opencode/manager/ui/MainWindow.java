@@ -259,12 +259,16 @@ public class MainWindow extends JFrame {
         tree.setToggleClickCount(-1);
         tree.setScrollsOnExpand(true);
         tree.setBackground(Theme.SIDEBAR_BG);
-        tree.setFont(new Font("SansSerif", Font.PLAIN, 15));
+tree.setFont(new Font("SansSerif", Font.PLAIN, 17));
+        tree.setRowHeight(32);
+        tree.setToggleClickCount(-1);
+        tree.setScrollsOnExpand(true);
+        tree.setBackground(Theme.SIDEBAR_BG);
 
         tree.setCellRenderer(new DefaultTreeCellRenderer() {
             {
-                setBorder(new EmptyBorder(2, 4, 2, 8));
-                setFont(new Font("SansSerif", Font.PLAIN, 15));
+                setBorder(new EmptyBorder(3, 6, 3, 10));
+                setFont(new Font("SansSerif", Font.PLAIN, 16));
                 setLeafIcon(null);
                 setOpenIcon(null);
                 setClosedIcon(null);
@@ -327,7 +331,15 @@ public class MainWindow extends JFrame {
         rightTool.add(selectAllBtn);
         rightTool.add(deselectBtn);
         rightTool.add(Box.createHorizontalStrut(8));
-        JButton settingsBtn = miniBtn("⚙  设置", e -> openSettings());
+        JButton settingsBtn = new JButton("\u2699");
+        settingsBtn.setFont(new Font("SansSerif", Font.PLAIN, 18));
+        settingsBtn.setForeground(Theme.ACCENT);
+        settingsBtn.setBorder(BorderFactory.createEmptyBorder(2, 6, 2, 6));
+        settingsBtn.setContentAreaFilled(false);
+        settingsBtn.setFocusPainted(false);
+        settingsBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        settingsBtn.setToolTipText("设置");
+        settingsBtn.addActionListener(e -> openSettings());
         rightTool.add(settingsBtn);
         toolbar.add(rightTool, BorderLayout.EAST);
 
@@ -355,9 +367,9 @@ public class MainWindow extends JFrame {
         sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Theme.BORDER));
 
         JLabel sideTitle = new JLabel("\uD83D\uDCC1  目录");
-        sideTitle.setFont(new Font("SansSerif", Font.BOLD, 14));
+        sideTitle.setFont(new Font("SansSerif", Font.BOLD, 16));
         sideTitle.setForeground(Theme.TEXT_SECONDARY);
-        sideTitle.setBorder(new EmptyBorder(10, 12, 6, 12));
+        sideTitle.setBorder(new EmptyBorder(12, 14, 8, 14));
         sidebar.add(sideTitle, BorderLayout.NORTH);
 
         JScrollPane treeScroll = new JScrollPane(tree);
@@ -388,7 +400,7 @@ public class MainWindow extends JFrame {
         statusBar.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.BORDER));
         statusBar.add(statusLabel, BorderLayout.WEST);
         JLabel hint = new JLabel("Ctrl+A 全选  |  双击重命名  |  右键菜单");
-        hint.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        hint.setFont(new Font("SansSerif", Font.PLAIN, 13));
         hint.setForeground(Theme.TEXT_SECONDARY);
         hint.setBorder(new EmptyBorder(6, 0, 6, 14));
         statusBar.add(hint, BorderLayout.EAST);
@@ -409,7 +421,7 @@ public class MainWindow extends JFrame {
 
     private JButton miniBtn(String text, ActionListener l) {
         JButton btn = new JButton(text);
-        btn.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        btn.setFont(new Font("SansSerif", Font.PLAIN, 13));
         btn.setForeground(Theme.ACCENT);
         btn.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
         btn.setContentAreaFilled(false);
