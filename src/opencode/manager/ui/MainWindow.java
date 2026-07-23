@@ -550,7 +550,7 @@ public class MainWindow extends JFrame {
     private boolean matchesDirPrefix(SessionRecord s) {
         if (selectedDirPrefix == null) return true;
         if (selectedDirPrefix.isEmpty()) return s.directory == null || s.directory.isEmpty();
-        return s.directory != null && (s.directory.equals(selectedDirPrefix) || s.directory.startsWith(selectedDirPrefix + "/"));
+        return s.directory != null && s.directory.equals(selectedDirPrefix);
     }
 
     private void updateStatus() {
