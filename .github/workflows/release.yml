@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
   build-linux:
@@ -15,25 +16,25 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
       - name: Build fat JAR
-        run: mvn clean package -DskipTests
-      - name: Build .deb
         run: |
-          sudo apt-get update
-          sudo apt-get install -y fakeroot dpkg-dev
+          mvn clean package -DskipTests || gradle clean jar
+      - name: Build Linux tar.gz
+        run: |
+          JAR=$(ls build/libs/*.jar target/*.jar 2>/dev/null | head -1)
           jpackage \
-            --input target \
+            --input "$(dirname "$JAR")" \
             --name "OpenCodeManager" \
-            --main-jar "opencode-manager-1.0.0.jar" \
+            --main-jar "$(basename "$JAR")" \
             --main-class opencode.manager.Main \
-            --type deb \
+            --type app-image \
             --app-version "${GITHUB_REF_NAME#v}" \
             --vendor "Zapei2" \
-            --linux-shortcut \
             --dest dist
+          tar -czf "OpenCodeManager-${GITHUB_REF_NAME#v}-linux.tar.gz" -C dist OpenCodeManager/
       - uses: actions/upload-artifact@v4
         with:
-          name: linux-deb
-          path: dist/*.deb
+          name: linux-package
+          path: OpenCodeManager-*.tar.gz
 
   build-windows:
     runs-on: windows-latest
@@ -44,8 +45,10 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
       - name: Build fat JAR
-        run: mvn clean package -DskipTests
-      - name: Build .exe
+        run: |
+          mvn clean package -DskipTests
+        shell: bash
+      - name: Build Windows .exe
         run: |
           jpackage `
             --input target `
@@ -59,7 +62,7 @@ jobs:
             --dest dist
       - uses: actions/upload-artifact@v4
         with:
-          name: windows-exe
+          name: windows-package
           path: dist/*.exe
 
   release:
@@ -67,12 +70,13 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/download-artifact@v4
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            linux-deb/*.deb
-            windows-exe/*.exe
+            linux-package/*.tar.gz
+            windows-package/*.exe
           generate_release_notes: true
