@@ -1,0 +1,78 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Build fat JAR
+        run: mvn clean package -DskipTests
+      - name: Build .deb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fakeroot dpkg-dev
+          jpackage \
+            --input target \
+            --name "OpenCodeManager" \
+            --main-jar "opencode-manager-1.0.0.jar" \
+            --main-class opencode.manager.Main \
+            --type deb \
+            --app-version "${GITHUB_REF_NAME#v}" \
+            --vendor "Zapei2" \
+            --linux-shortcut \
+            --dest dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-deb
+          path: dist/*.deb
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Build fat JAR
+        run: mvn clean package -DskipTests
+      - name: Build .exe
+        run: |
+          jpackage `
+            --input target `
+            --name "OpenCodeManager" `
+            --main-jar "opencode-manager-1.0.0.jar" `
+            --main-class opencode.manager.Main `
+            --type exe `
+            --app-version "$env:GITHUB_REF_NAME.Replace('v','')" `
+            --vendor "Zapei2" `
+            --win-shortcut `
+            --dest dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: dist/*.exe
+
+  release:
+    needs: [build-linux, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            linux-deb/*.deb
+            windows-exe/*.exe
+          generate_release_notes: true
