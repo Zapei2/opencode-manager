@@ -183,7 +183,7 @@ public class MainWindow extends JFrame {
         private final JLabel label = new JLabel();
         {
             label.setOpaque(true);
-            label.setBorder(new EmptyBorder(0, 8, 0, 8));
+            label.setBorder(new EmptyBorder(0, 10, 0, 10));
             label.setFont(new Font("SansSerif", Font.PLAIN, 15));
         }
         public Component getTableCellRendererComponent(JTable t, Object value, boolean sel, boolean focus, int row, int col) {
@@ -191,33 +191,38 @@ public class MainWindow extends JFrame {
             SessionRecord s = tableModel.getSessionAt(modelRow);
             boolean archived = s != null && s.isArchived();
 
-            label.setFont(new Font("SansSerif", col == 1 ? Font.PLAIN : Font.PLAIN, col == 1 ? 15 : 14));
-            label.setForeground(Theme.TEXT_PRIMARY);
+            label.setFont(new Font("SansSerif", Font.PLAIN, col == 1 ? 15 : 13));
 
             if (sel) {
                 label.setBackground(Theme.SELECT_BG);
                 label.setForeground(Theme.TEXT_PRIMARY);
             } else if (archived) {
-                label.setBackground(new Color(250, 250, 250));
+                label.setBackground(new Color(archived ? 0xf5f5f5 : 0));
             } else {
                 label.setBackground(row % 2 == 0 ? Theme.TABLE_BG : Theme.ROW_ALT);
             }
 
             if (col == 0) {
-                label.setText("");
                 label.setHorizontalAlignment(SwingConstants.CENTER);
+                if (archived) label.setText("\u25CB");
+                else label.setText("\u25CF");
+                label.setForeground(archived ? Theme.TEXT_SECONDARY : new Color(0x22c55e));
             } else if (col == 1) {
-                String icon = archived ? "\uD83D\uDCE6 " : "\uD83D\uDCDD ";
-                label.setText(icon + (value != null ? value.toString() : ""));
+                label.setForeground(archived ? Theme.TEXT_SECONDARY : Theme.TEXT_PRIMARY);
+                label.setText(value != null ? value.toString() : "");
                 label.setHorizontalAlignment(SwingConstants.LEFT);
             } else if (col == 2) {
-                String d = value != null ? value.toString() : "";
-                label.setText(d);
+                label.setText(value != null ? value.toString() : "");
                 label.setForeground(Theme.TEXT_SECONDARY);
                 label.setHorizontalAlignment(SwingConstants.LEFT);
             } else if (col == 3 || col == 4 || col == 5) {
                 label.setText(value != null ? value.toString() : "");
+                label.setForeground(Theme.TEXT_PRIMARY);
                 label.setHorizontalAlignment(SwingConstants.RIGHT);
+            } else if (col == 6) {
+                label.setText(value != null ? value.toString() : "");
+                label.setForeground(Theme.TEXT_SECONDARY);
+                label.setHorizontalAlignment(SwingConstants.LEFT);
             } else if (col == 7) {
                 label.setText(value != null ? value.toString() : "");
                 label.setHorizontalAlignment(SwingConstants.CENTER);
@@ -236,15 +241,15 @@ public class MainWindow extends JFrame {
         private final JLabel label = new JLabel();
         {
             label.setOpaque(true);
-            label.setBackground(Theme.BG);
-            label.setForeground(Theme.TEXT_SECONDARY);
             label.setFont(new Font("SansSerif", Font.BOLD, 13));
             label.setBorder(BorderFactory.createCompoundBorder(
-                new EmptyBorder(0, 8, 0, 8),
-                BorderFactory.createMatteBorder(0, 0, 1, 0, Theme.BORDER)));
+                new EmptyBorder(0, 10, 0, 10),
+                BorderFactory.createMatteBorder(0, 0, 2, 0, Theme.ACCENT)));
         }
         public Component getTableCellRendererComponent(JTable t, Object value, boolean sel, boolean focus, int row, int col) {
             label.setText(value != null ? value.toString() : "");
+            label.setBackground(col == 0 ? Theme.ACCENT : Theme.BG);
+            label.setForeground(col == 0 ? Color.WHITE : Theme.TEXT_SECONDARY);
             return label;
         }
     }
@@ -254,16 +259,12 @@ public class MainWindow extends JFrame {
     private void setupTree() {
         tree.setRootVisible(true);
         tree.setShowsRootHandles(true);
-        tree.setRowHeight(28);
-        tree.setBorder(new EmptyBorder(6, 0, 6, 0));
+        tree.setRowHeight(34);
+        tree.setBorder(new EmptyBorder(6, 4, 6, 4));
         tree.setToggleClickCount(-1);
         tree.setScrollsOnExpand(true);
         tree.setBackground(Theme.SIDEBAR_BG);
-tree.setFont(new Font("SansSerif", Font.PLAIN, 17));
-        tree.setRowHeight(32);
-        tree.setToggleClickCount(-1);
-        tree.setScrollsOnExpand(true);
-        tree.setBackground(Theme.SIDEBAR_BG);
+        tree.setFont(new Font("SansSerif", Font.PLAIN, 16));
 
         tree.setCellRenderer(new DefaultTreeCellRenderer() {
             {
@@ -324,19 +325,19 @@ tree.setFont(new Font("SansSerif", Font.PLAIN, 17));
 
         JPanel centerTool = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
         centerTool.setOpaque(false);
-        centerTool.add(toolBtn("✏  重命名", e -> renameSelected()));
-        centerTool.add(toolBtn("📋  复制", e -> copySelected()));
-        centerTool.add(toolBtn("📌  粘贴", e -> pasteSelected()));
-        centerTool.add(toolBtn("📦  移动", e -> moveSelected()));
-        centerTool.add(toolBtn("🗃  归档", e -> archiveSelected()));
-        centerTool.add(toolBtn("🗑  删除", e -> deleteSelected()));
+        centerTool.add(toolBtn("✏  重命名", e -> renameSelected(), null));
+        centerTool.add(toolBtn("📋  复制", e -> copySelected(), null));
+        centerTool.add(toolBtn("📌  粘贴", e -> pasteSelected(), null));
+        centerTool.add(toolBtn("📦  移动", e -> moveSelected(), null));
+        centerTool.add(toolBtn("🗃  归档", e -> archiveSelected(), new Color(0xf59e0b)));
+        centerTool.add(toolBtn("🗑  删除", e -> deleteSelected(), new Color(0xef4444)));
         JSeparator sep = new JSeparator(JSeparator.VERTICAL);
         sep.setPreferredSize(new Dimension(1, 24));
         centerTool.add(Box.createHorizontalStrut(6));
         centerTool.add(sep);
         centerTool.add(Box.createHorizontalStrut(6));
-        centerTool.add(toolBtn("🔄  刷新", e -> refreshAll()));
-        centerTool.add(toolBtn("💾  备份", e -> backupDatabase()));
+        centerTool.add(toolBtn("🔄  刷新", e -> refreshAll(), new Color(0x3b82f6)));
+        centerTool.add(toolBtn("💾  备份", e -> backupDatabase(), new Color(0x8b5cf6)));
         toolbar.add(centerTool, BorderLayout.CENTER);
 
         JPanel rightTool = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
@@ -399,10 +400,11 @@ tree.setFont(new Font("SansSerif", Font.PLAIN, 17));
         getContentPane().add(statusBar, BorderLayout.SOUTH);
     }
 
-    private JButton toolBtn(String text, ActionListener l) {
+    private JButton toolBtn(String text, ActionListener l, Color color) {
         JButton btn = new JButton(text);
         btn.setFont(new Font("SansSerif", Font.PLAIN, 13));
         btn.setFocusPainted(false);
+        if (color != null) btn.setForeground(color);
         btn.addActionListener(l);
         return btn;
     }

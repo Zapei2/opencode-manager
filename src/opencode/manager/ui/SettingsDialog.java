@@ -3,7 +3,6 @@ package opencode.manager.ui;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.io.File;
 
 public class SettingsDialog extends JDialog {
     private final Settings settings;
@@ -13,7 +12,7 @@ public class SettingsDialog extends JDialog {
         super(parent, "设置", true);
         this.settings = settings;
         this.onThemeChanged = onThemeChanged;
-        setSize(500, 500);
+        setSize(500, 460);
         setLocationRelativeTo(parent);
 
         JPanel root = new JPanel(new BorderLayout());
@@ -24,9 +23,10 @@ public class SettingsDialog extends JDialog {
         content.setOpaque(false);
 
         // ── Theme ──
-        content.add(sectionTitle("外观主题"));
-        content.add(Box.createVerticalStrut(8));
-        JPanel themeRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 0));
+        JPanel themeHeader = sectionTitle("外观主题");
+        content.add(themeHeader);
+        content.add(Box.createVerticalStrut(10));
+        JPanel themeRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 24, 0));
         themeRow.setOpaque(false);
         JRadioButton lightBtn = new JRadioButton("☀  浅色");
         JRadioButton darkBtn = new JRadioButton("☾  深色");
@@ -42,34 +42,12 @@ public class SettingsDialog extends JDialog {
         themeRow.add(lightBtn);
         themeRow.add(darkBtn);
         content.add(themeRow);
-        content.add(Box.createVerticalStrut(18));
-
-        // ── Archive directory ──
-        content.add(sectionTitle("归档目录"));
-        content.add(Box.createVerticalStrut(8));
-        JPanel archiveRow = new JPanel(new BorderLayout(8, 0));
-        archiveRow.setOpaque(false);
-        JTextField archiveField = new JTextField(settings.getArchiveDir());
-        archiveField.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        JButton browseBtn = new JButton("浏览...");
-        browseBtn.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        browseBtn.addActionListener(e -> {
-            JFileChooser chooser = new JFileChooser();
-            chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-            if (!archiveField.getText().isEmpty())
-                chooser.setSelectedFile(new File(archiveField.getText()));
-            if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-                archiveField.setText(chooser.getSelectedFile().getAbsolutePath());
-            }
-        });
-        archiveRow.add(archiveField, BorderLayout.CENTER);
-        archiveRow.add(browseBtn, BorderLayout.EAST);
-        content.add(archiveRow);
-        content.add(Box.createVerticalStrut(18));
+        content.add(Box.createVerticalStrut(22));
 
         // ── Shortcuts ──
-        content.add(sectionTitle("快捷键"));
-        content.add(Box.createVerticalStrut(8));
+        JPanel shortcutsHeader = sectionTitle("快捷键");
+        content.add(shortcutsHeader);
+        content.add(Box.createVerticalStrut(10));
         JPanel shortcutsPanel = new JPanel(new GridBagLayout());
         shortcutsPanel.setOpaque(false);
         GridBagConstraints c = new GridBagConstraints();
@@ -100,7 +78,7 @@ public class SettingsDialog extends JDialog {
 
             c.gridx = 1;
             c.weightx = 1;
-            c.insets = new Insets(3, 20, 3, 0);
+            c.insets = new Insets(3, 24, 3, 0);
             JLabel descLabel = new JLabel(shortcuts[i][1]);
             descLabel.setFont(new Font("SansSerif", Font.PLAIN, 14));
             descLabel.setForeground(Theme.TEXT_PRIMARY);
@@ -114,10 +92,7 @@ public class SettingsDialog extends JDialog {
         // ── Bottom ──
         JButton closeBtn = new JButton("关闭");
         closeBtn.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        closeBtn.addActionListener(e -> {
-            settings.setArchiveDir(archiveField.getText().trim());
-            dispose();
-        });
+        closeBtn.addActionListener(e -> dispose());
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         bottom.setOpaque(false);
         bottom.add(closeBtn);
@@ -129,7 +104,6 @@ public class SettingsDialog extends JDialog {
             settings.setDarkMode(dark);
             Theme.applyFlatLaf(dark);
             dispose();
-            settings.setArchiveDir(archiveField.getText().trim());
             onThemeChanged.run();
         };
         lightBtn.addActionListener(listener);
