@@ -646,7 +646,9 @@ public class MainWindow extends JFrame {
             null, new Object[]{"确认删除", "取消"}, "取消");
         if (n != 0) return;
         try {
-            if (backupCheck.isSelected()) db.backupDatabase();
+            if (backupCheck.isSelected()) {
+                try { db.backupDatabase(); } catch (Exception ignored) {}
+            }
             for (SessionRecord s : selected) db.deleteSession(s.id);
             refreshAll();
             showInfo("成功删除 " + selected.size() + " 个会话");
