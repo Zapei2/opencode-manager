@@ -31,6 +31,7 @@ public class MainWindow extends JFrame {
     private String selectedDirPrefix;
     private SessionRecord selectedSession;
     private boolean updatingTree;
+    private List<String> clipboardSessionIds;
 
     private static final Color BG = new Color(248, 250, 252);
     private static final Color SIDEBAR_BG = Color.WHITE;
@@ -124,6 +125,9 @@ public class MainWindow extends JFrame {
 
     private void setupTablePopup() {
         JPopupMenu popup = new JPopupMenu();
+        JMenuItem pasteItem = popupItem("粘贴", e -> pasteSelected());
+        popup.add(pasteItem);
+        popup.addSeparator();
         popup.add(popupItem("重命名", e -> renameSelected()));
         popup.add(popupItem("复制", e -> copySelected()));
         popup.add(popupItem("移动", e -> moveSelected()));
@@ -148,8 +152,11 @@ public class MainWindow extends JFrame {
                 int row = table.rowAtPoint(e.getPoint());
                 if (row >= 0) {
                     if (!table.isRowSelected(row)) table.setRowSelectionInterval(row, row);
-                    popup.show(table, e.getX(), e.getY());
+                } else {
+                    table.clearSelection();
                 }
+                pasteItem.setEnabled(clipboardSessionIds != null && !clipboardSessionIds.isEmpty());
+                popup.show(table, e.getX(), e.getY());
             }
         });
     }
@@ -588,14 +595,29 @@ public class MainWindow extends JFrame {
     private void copySelected() {
         List<SessionRecord> selected = getSelectedSessions();
         if (selected.isEmpty()) { showWarning("请先选择要复制的会话"); return; }
-        if (JOptionPane.showConfirmDialog(this,
-                "确定要复制 " + selected.size() + " 个会话吗？\n（包含所有消息和部件）",
-                "确认复制", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
+        clipboardSessionIds = selected.stream().map(s -> s.id).collect(Collectors.toList());
+        showInfo("已复制 " + selected.size() + " 个会话，可到目标目录粘贴");
+    }
+
+    private void pasteSelected() {
+        if (clipboardSessionIds == null || clipboardSessionIds.isEmpty()) {
+            showWarning("请先复制一个会话"); return;
+        }
         try {
-            for (SessionRecord s : selected) db.copySession(s.id);
+            for (String id : clipboardSessionIds) {
+                String newId = db.copySession(id);
+                if (selectedDirPrefix != null && !selectedDirPrefix.isEmpty()) {
+                    List<ProjectRecord> projects = db.listProjects();
+                    String targetProjectId = "global";
+                    for (ProjectRecord p : projects)
+                        if (selectedDirPrefix.startsWith(p.worktree)) { targetProjectId = p.id; break; }
+                    db.moveSession(newId, selectedDirPrefix, targetProjectId);
+                }
+            }
             refreshAll();
-            showInfo("成功复制 " + selected.size() + " 个会话");
-        } catch (Exception ex) { showError("复制失败", ex); }
+            showInfo("已粘贴 " + clipboardSessionIds.size() + " 个会话"
+                    + (selectedDirPrefix != null ? " 到 " + selectedDirPrefix : ""));
+        } catch (Exception ex) { showError("粘贴失败", ex); }
     }
 
     private void moveSelected() {
