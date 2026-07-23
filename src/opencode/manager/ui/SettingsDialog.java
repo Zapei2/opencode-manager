@@ -13,39 +13,42 @@ public class SettingsDialog extends JDialog {
         super(parent, "设置", true);
         this.settings = settings;
         this.onThemeChanged = onThemeChanged;
-        setSize(480, 460);
+        setSize(500, 500);
         setLocationRelativeTo(parent);
 
-        JPanel root = new JPanel(new BorderLayout(0, 16));
-        root.setBorder(new EmptyBorder(24, 24, 20, 24));
-        root.setBackground(Theme.BG);
+        JPanel root = new JPanel(new BorderLayout());
+        root.setBorder(new EmptyBorder(20, 20, 16, 20));
 
-        JPanel center = new JPanel();
-        center.setLayout(new BoxLayout(center, BoxLayout.Y_AXIS));
-        center.setOpaque(false);
+        JPanel content = new JPanel();
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+        content.setOpaque(false);
 
-        // --- Theme ---
-        JPanel themePanel = sectionPanel("外观主题");
+        // ── Theme ──
+        content.add(sectionTitle("外观主题"));
+        content.add(Box.createVerticalStrut(8));
+        JPanel themeRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 0));
+        themeRow.setOpaque(false);
         JRadioButton lightBtn = new JRadioButton("☀  浅色");
         JRadioButton darkBtn = new JRadioButton("☾  深色");
+        lightBtn.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        darkBtn.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        lightBtn.setOpaque(false);
+        darkBtn.setOpaque(false);
         ButtonGroup group = new ButtonGroup();
         group.add(lightBtn);
         group.add(darkBtn);
         lightBtn.setSelected(!settings.isDarkMode());
         darkBtn.setSelected(settings.isDarkMode());
-        lightBtn.setOpaque(false);
-        lightBtn.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        darkBtn.setOpaque(false);
-        darkBtn.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        themePanel.add(lightBtn);
-        themePanel.add(Box.createHorizontalStrut(24));
-        themePanel.add(darkBtn);
-        center.add(themePanel);
-        center.add(Box.createVerticalStrut(12));
+        themeRow.add(lightBtn);
+        themeRow.add(darkBtn);
+        content.add(themeRow);
+        content.add(Box.createVerticalStrut(18));
 
-        // --- Archive directory ---
-        JPanel archiveSection = sectionPanel("归档目录");
-        archiveSection.setLayout(new BorderLayout(8, 0));
+        // ── Archive directory ──
+        content.add(sectionTitle("归档目录"));
+        content.add(Box.createVerticalStrut(8));
+        JPanel archiveRow = new JPanel(new BorderLayout(8, 0));
+        archiveRow.setOpaque(false);
         JTextField archiveField = new JTextField(settings.getArchiveDir());
         archiveField.setFont(new Font("SansSerif", Font.PLAIN, 13));
         JButton browseBtn = new JButton("浏览...");
@@ -59,17 +62,19 @@ public class SettingsDialog extends JDialog {
                 archiveField.setText(chooser.getSelectedFile().getAbsolutePath());
             }
         });
-        archiveSection.add(archiveField, BorderLayout.CENTER);
-        archiveSection.add(browseBtn, BorderLayout.EAST);
-        center.add(archiveSection);
-        center.add(Box.createVerticalStrut(12));
+        archiveRow.add(archiveField, BorderLayout.CENTER);
+        archiveRow.add(browseBtn, BorderLayout.EAST);
+        content.add(archiveRow);
+        content.add(Box.createVerticalStrut(18));
 
-        // --- Shortcuts ---
-        JPanel shortcutsPanel = sectionPanel("快捷键");
-        shortcutsPanel.setLayout(new GridBagLayout());
+        // ── Shortcuts ──
+        content.add(sectionTitle("快捷键"));
+        content.add(Box.createVerticalStrut(8));
+        JPanel shortcutsPanel = new JPanel(new GridBagLayout());
+        shortcutsPanel.setOpaque(false);
         GridBagConstraints c = new GridBagConstraints();
         c.fill = GridBagConstraints.HORIZONTAL;
-        c.insets = new Insets(3, 0, 3, 0);
+        c.insets = new Insets(3, 8, 3, 0);
 
         String[][] shortcuts = {
             {"Ctrl+A", "全选"},
@@ -77,6 +82,7 @@ public class SettingsDialog extends JDialog {
             {"Ctrl+Shift+V", "粘贴会话"},
             {"Ctrl+R", "重命名"},
             {"Ctrl+D", "删除"},
+            {"Ctrl+E", "归档"},
             {"Ctrl+M", "移动"},
             {"F5", "刷新"},
             {"Ctrl+F", "搜索"},
@@ -87,32 +93,32 @@ public class SettingsDialog extends JDialog {
             c.gridy = i;
             c.gridx = 0;
             c.weightx = 0;
-            JLabel keyLabel = new JLabel("  " + shortcuts[i][0]);
+            JLabel keyLabel = new JLabel(shortcuts[i][0]);
             keyLabel.setFont(new Font("Monospaced", Font.BOLD, 13));
             keyLabel.setForeground(Theme.ACCENT);
             shortcutsPanel.add(keyLabel, c);
 
             c.gridx = 1;
             c.weightx = 1;
-            c.insets = new Insets(3, 16, 3, 0);
+            c.insets = new Insets(3, 20, 3, 0);
             JLabel descLabel = new JLabel(shortcuts[i][1]);
             descLabel.setFont(new Font("SansSerif", Font.PLAIN, 14));
             descLabel.setForeground(Theme.TEXT_PRIMARY);
             shortcutsPanel.add(descLabel, c);
-            c.insets = new Insets(3, 0, 3, 0);
+            c.insets = new Insets(3, 8, 3, 0);
         }
 
-        center.add(shortcutsPanel);
-        root.add(center, BorderLayout.CENTER);
+        content.add(shortcutsPanel);
+        root.add(content, BorderLayout.CENTER);
 
-        // --- Bottom ---
+        // ── Bottom ──
         JButton closeBtn = new JButton("关闭");
         closeBtn.setFont(new Font("SansSerif", Font.PLAIN, 13));
         closeBtn.addActionListener(e -> {
             settings.setArchiveDir(archiveField.getText().trim());
             dispose();
         });
-        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         bottom.setOpaque(false);
         bottom.add(closeBtn);
         root.add(bottom, BorderLayout.SOUTH);
@@ -132,14 +138,14 @@ public class SettingsDialog extends JDialog {
         getContentPane().add(root);
     }
 
-    private JPanel sectionPanel(String title) {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 6));
-        panel.setOpaque(false);
+    private JPanel sectionTitle(String title) {
+        JPanel p = new JPanel(new BorderLayout());
+        p.setOpaque(false);
         JLabel label = new JLabel(title);
-        label.setFont(new Font("SansSerif", Font.BOLD, 13));
+        label.setFont(new Font("SansSerif", Font.BOLD, 14));
         label.setForeground(Theme.TEXT_SECONDARY);
-        panel.add(label);
-        panel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Theme.BORDER));
-        return panel;
+        p.add(label, BorderLayout.WEST);
+        p.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Theme.BORDER));
+        return p;
     }
 }
