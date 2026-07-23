@@ -594,15 +594,12 @@ public class MainWindow extends JFrame {
 
     private void copySelected() {
         List<SessionRecord> selected = getSelectedSessions();
-        if (selected.isEmpty()) { showWarning("请先选择要复制的会话"); return; }
+        if (selected.isEmpty()) return;
         clipboardSessionIds = selected.stream().map(s -> s.id).collect(Collectors.toList());
-        showInfo("已复制 " + selected.size() + " 个会话，可到目标目录粘贴");
     }
 
     private void pasteSelected() {
-        if (clipboardSessionIds == null || clipboardSessionIds.isEmpty()) {
-            showWarning("请先复制一个会话"); return;
-        }
+        if (clipboardSessionIds == null || clipboardSessionIds.isEmpty()) return;
         try {
             for (String id : clipboardSessionIds) {
                 String newId = db.copySession(id);
@@ -615,8 +612,6 @@ public class MainWindow extends JFrame {
                 }
             }
             refreshAll();
-            showInfo("已粘贴 " + clipboardSessionIds.size() + " 个会话"
-                    + (selectedDirPrefix != null ? " 到 " + selectedDirPrefix : ""));
         } catch (Exception ex) { showError("粘贴失败", ex); }
     }
 
@@ -641,11 +636,20 @@ public class MainWindow extends JFrame {
     private void deleteSelected() {
         List<SessionRecord> selected = getSelectedSessions();
         if (selected.isEmpty()) { showWarning("请先选择要删除的会话"); return; }
+        StringBuilder msg = new StringBuilder("确定要永久删除以下 " + selected.size() + " 个会话吗？\n\n");
+        for (SessionRecord s : selected)
+            msg.append("  \u2022 ").append(s.title).append(" (").append(s.messageCount).append(" 条消息)\n");
+        msg.append("\n此操作不可撤销！");
+        JCheckBox backupCheck = new JCheckBox("删除前备份数据库", true);
+        int n = JOptionPane.showOptionDialog(this, new Object[]{msg.toString(), backupCheck},
+            "确认删除", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE,
+            null, new Object[]{"确认删除", "取消"}, "取消");
+        if (n != 0) return;
         try {
-            db.backupDatabase();
+            if (backupCheck.isSelected()) db.backupDatabase();
             for (SessionRecord s : selected) db.deleteSession(s.id);
             refreshAll();
-            showInfo("已删除 " + selected.size() + " 个会话（已自动备份）");
+            showInfo("成功删除 " + selected.size() + " 个会话");
         } catch (Exception ex) { showError("删除失败", ex); }
     }
 
