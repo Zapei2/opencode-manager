@@ -267,9 +267,6 @@ public class MainWindow extends JFrame {
                     String icon = expanded ? "\uD83D\uDCC2" : "\uD83D\uDCC1";
                     String cnt = d.sessionCount > 0 ? "  " + d.sessionCount : "";
                     label.setText(icon + "  " + d.name + cnt);
-                } else if (obj instanceof SessionRecord s) {
-                    String ic = s.isArchived() ? "\uD83D\uDCE6" : "\uD83D\uDCDD";
-                    label.setText(ic + "  " + s.title);
                 } else {
                     label.setText(String.valueOf(obj));
                 }
@@ -283,12 +280,11 @@ public class MainWindow extends JFrame {
             if (node == null) return;
             Object obj = node.getUserObject();
             if (node == treeRoot) {
-                selectedDirPrefix = null; selectedSession = null;
+                selectedDirPrefix = null;
             } else if (obj instanceof DirNode d) {
-                selectedDirPrefix = d.fullPath; selectedSession = null;
-            } else if (obj instanceof SessionRecord s) {
-                selectedSession = s; selectedDirPrefix = s.directory;
+                selectedDirPrefix = d.fullPath;
             }
+            selectedSession = null;
             applyFilter();
         });
     }
@@ -423,13 +419,10 @@ public class MainWindow extends JFrame {
 
         String home = System.getProperty("user.home");
         Map<String, List<SessionRecord>> byDir = new LinkedHashMap<>();
-        List<SessionRecord> noDir = new ArrayList<>();
-
         for (SessionRecord s : allSessions) {
             if (!showArchived.isSelected() && s.isArchived()) continue;
             String dir = (s.directory != null && !s.directory.isEmpty()) ? s.directory : null;
             if (dir != null) byDir.computeIfAbsent(dir, k -> new ArrayList<>()).add(s);
-            else noDir.add(s);
         }
 
         Map<String, DefaultMutableTreeNode> pathNodes = new LinkedHashMap<>();
@@ -470,34 +463,17 @@ public class MainWindow extends JFrame {
             }
         }
 
-        // Pass 2: Add session nodes to leaf directories
+        // Pass 2: Set session counts from data (no session nodes in tree)
         for (String fullDir : sortedDirs) {
-            List<SessionRecord> dirSessions = byDir.get(fullDir);
-            dirSessions.sort((a, b) -> Long.compare(b.timeUpdated, a.timeUpdated));
-
             String relPath = fullDir.startsWith(home) ? "~" + fullDir.substring(home.length()) : fullDir;
             if (relPath.endsWith("/")) relPath = relPath.substring(0, relPath.length() - 1);
-
             DefaultMutableTreeNode leafNode = pathNodes.get(relPath);
-            if (leafNode != null) {
-                for (SessionRecord s : dirSessions) {
-                    leafNode.add(new DefaultMutableTreeNode(s));
-                }
+            if (leafNode != null && leafNode.getUserObject() instanceof DirNode dn) {
+                dn.sessionCount = byDir.get(fullDir).size();
             }
         }
 
-        // Add "(无目录)" node
-        if (!noDir.isEmpty()) {
-            noDir.sort((a, b) -> Long.compare(b.timeUpdated, a.timeUpdated));
-            DirNode dn = new DirNode("(无目录)", "", true, noDir.size());
-            DefaultMutableTreeNode node = new DefaultMutableTreeNode(dn);
-            treeRoot.add(node);
-            for (SessionRecord s : noDir) {
-                node.add(new DefaultMutableTreeNode(s));
-            }
-        }
-
-        // Update all directory counts
+        // Propagate counts upward for intermediate directories
         updateDirCounts(treeRoot);
 
         treeModel.reload();
@@ -509,11 +485,8 @@ public class MainWindow extends JFrame {
         int total = 0;
         for (int i = 0; i < node.getChildCount(); i++) {
             DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
-            Object obj = child.getUserObject();
-            if (obj instanceof SessionRecord) total++;
-            else if (obj instanceof DirNode dn) {
-                if (dn.hasSessions) total += dn.sessionCount;
-                else total += updateDirCounts(child);
+            if (child.getUserObject() instanceof DirNode dn) {
+                total += dn.hasSessions ? dn.sessionCount : updateDirCounts(child);
             }
         }
         if (node != treeRoot && node.getUserObject() instanceof DirNode dn && !dn.hasSessions)
