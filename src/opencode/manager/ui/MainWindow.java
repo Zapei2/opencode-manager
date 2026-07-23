@@ -74,12 +74,12 @@ public class MainWindow extends JFrame {
         });
 
         showArchived = new JCheckBox("显示已归档");
-        showArchived.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        showArchived.setFont(new Font("SansSerif", Font.PLAIN, 14));
         showArchived.setOpaque(false);
         showArchived.addActionListener(e -> refreshAll());
 
         statusLabel = new JLabel(" ");
-        statusLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        statusLabel.setFont(new Font("SansSerif", Font.PLAIN, 14));
         statusLabel.setForeground(Theme.TEXT_SECONDARY);
         statusLabel.setBorder(new EmptyBorder(6, 14, 6, 14));
 
@@ -90,7 +90,7 @@ public class MainWindow extends JFrame {
     // ======================== TABLE ========================
 
     private void setupTable() {
-        table.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        table.setFont(new Font("SansSerif", Font.PLAIN, 15));
         table.setForeground(Theme.TEXT_PRIMARY);
         table.setRowHeight(36);
         table.setShowGrid(false);
@@ -120,6 +120,7 @@ public class MainWindow extends JFrame {
         bindShortcut("ctrl R", "renameSession", e -> renameSelected());
         bindShortcut("DELETE", "deleteSessions", e -> deleteSelected());
         bindShortcut("ctrl M", "moveSession", e -> moveSelected());
+        bindShortcut("ctrl E", "archiveSession", e -> archiveSelected());
         bindShortcut("F5", "refresh", e -> refreshAll());
 
         // Ctrl+F → focus search (on root pane for global reach)
@@ -171,7 +172,7 @@ public class MainWindow extends JFrame {
 
     private JMenuItem popupItem(String text, ActionListener l) {
         JMenuItem item = new JMenuItem(text);
-        item.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        item.setFont(new Font("SansSerif", Font.PLAIN, 15));
         item.addActionListener(l);
         return item;
     }
@@ -183,14 +184,14 @@ public class MainWindow extends JFrame {
         {
             label.setOpaque(true);
             label.setBorder(new EmptyBorder(0, 8, 0, 8));
-            label.setFont(new Font("SansSerif", Font.PLAIN, 13));
+            label.setFont(new Font("SansSerif", Font.PLAIN, 15));
         }
         public Component getTableCellRendererComponent(JTable t, Object value, boolean sel, boolean focus, int row, int col) {
             int modelRow = t.convertRowIndexToModel(row);
             SessionRecord s = tableModel.getSessionAt(modelRow);
             boolean archived = s != null && s.isArchived();
 
-            label.setFont(new Font("SansSerif", col == 1 ? Font.PLAIN : Font.PLAIN, col == 1 ? 13 : 12));
+            label.setFont(new Font("SansSerif", col == 1 ? Font.PLAIN : Font.PLAIN, col == 1 ? 15 : 14));
             label.setForeground(Theme.TEXT_PRIMARY);
 
             if (sel) {
@@ -237,7 +238,7 @@ public class MainWindow extends JFrame {
             label.setOpaque(true);
             label.setBackground(Theme.BG);
             label.setForeground(Theme.TEXT_SECONDARY);
-            label.setFont(new Font("SansSerif", Font.BOLD, 11));
+            label.setFont(new Font("SansSerif", Font.BOLD, 13));
             label.setBorder(BorderFactory.createCompoundBorder(
                 new EmptyBorder(0, 8, 0, 8),
                 BorderFactory.createMatteBorder(0, 0, 1, 0, Theme.BORDER)));
@@ -258,12 +259,12 @@ public class MainWindow extends JFrame {
         tree.setToggleClickCount(-1);
         tree.setScrollsOnExpand(true);
         tree.setBackground(Theme.SIDEBAR_BG);
-        tree.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        tree.setFont(new Font("SansSerif", Font.PLAIN, 15));
 
         tree.setCellRenderer(new DefaultTreeCellRenderer() {
             {
                 setBorder(new EmptyBorder(2, 4, 2, 8));
-                setFont(new Font("SansSerif", Font.PLAIN, 13));
+                setFont(new Font("SansSerif", Font.PLAIN, 15));
                 setLeafIcon(null);
                 setOpenIcon(null);
                 setClosedIcon(null);
@@ -313,7 +314,7 @@ public class MainWindow extends JFrame {
         JPanel leftTool = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         leftTool.setOpaque(false);
         searchField.setPreferredSize(new Dimension(240, 30));
-        searchField.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        searchField.setFont(new Font("SansSerif", Font.PLAIN, 14));
         leftTool.add(searchField);
         leftTool.add(Box.createHorizontalStrut(10));
         leftTool.add(showArchived);
@@ -340,6 +341,7 @@ public class MainWindow extends JFrame {
         actionBar.add(actionBtn("📋  复制", e -> copySelected()));
         actionBar.add(actionBtn("📌  粘贴", e -> pasteSelected()));
         actionBar.add(actionBtn("📦  移动", e -> moveSelected()));
+        actionBar.add(actionBtn("🗃  归档", e -> archiveSelected()));
         actionBar.add(actionBtn("🗑  删除", e -> deleteSelected()));
         actionBar.add(Box.createHorizontalStrut(12));
         actionBar.add(new JSeparator(JSeparator.VERTICAL) {{ setPreferredSize(new Dimension(1, 22)); setForeground(Theme.BORDER); }});
@@ -353,7 +355,7 @@ public class MainWindow extends JFrame {
         sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Theme.BORDER));
 
         JLabel sideTitle = new JLabel("\uD83D\uDCC1  目录");
-        sideTitle.setFont(new Font("SansSerif", Font.BOLD, 12));
+        sideTitle.setFont(new Font("SansSerif", Font.BOLD, 14));
         sideTitle.setForeground(Theme.TEXT_SECONDARY);
         sideTitle.setBorder(new EmptyBorder(10, 12, 6, 12));
         sidebar.add(sideTitle, BorderLayout.NORTH);
@@ -398,7 +400,7 @@ public class MainWindow extends JFrame {
 
     private JButton actionBtn(String text, ActionListener l) {
         JButton btn = new JButton(text);
-        btn.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        btn.setFont(new Font("SansSerif", Font.PLAIN, 14));
         btn.setForeground(Theme.TEXT_PRIMARY);
         btn.setFocusPainted(false);
         btn.addActionListener(l);
@@ -644,6 +646,19 @@ public class MainWindow extends JFrame {
         } catch (Exception ex) { showError("移动失败", ex); }
     }
 
+    private void archiveSelected() {
+        List<SessionRecord> selected = getSelectedSessions();
+        if (selected.isEmpty()) return;
+        boolean allArchived = selected.stream().allMatch(SessionRecord::isArchived);
+        try {
+            for (SessionRecord s : selected) {
+                if (allArchived) db.unarchiveSession(s.id);
+                else db.archiveSession(s.id);
+            }
+            refreshAll();
+        } catch (Exception ex) { showError(allArchived ? "取消归档失败" : "归档失败", ex); }
+    }
+
     private void deleteSelected() {
         List<SessionRecord> selected = getSelectedSessions();
         if (selected.isEmpty()) { showWarning("请先选择要删除的会话"); return; }
@@ -709,7 +724,7 @@ public class MainWindow extends JFrame {
             s.version != null ? s.version : "-");
         JTextArea ta = new JTextArea(msg);
         ta.setEditable(false);
-        ta.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        ta.setFont(new Font("Monospaced", Font.PLAIN, 14));
         ta.setBackground(new Color(245, 245, 245));
         JOptionPane.showMessageDialog(this, new JScrollPane(ta), "会话详情", JOptionPane.INFORMATION_MESSAGE);
     }

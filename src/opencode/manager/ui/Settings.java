@@ -8,6 +8,7 @@ public class Settings {
     private static final Path FILE = Path.of(System.getProperty("user.home"), ".config", "opencode_manager", "settings.properties");
     private final Properties props;
     private boolean darkMode;
+    private String archiveDir;
 
     public Settings() {
         props = new Properties();
@@ -20,6 +21,7 @@ public class Settings {
             }
         } catch (Exception ignored) {}
         darkMode = "dark".equalsIgnoreCase(props.getProperty("theme", "light"));
+        archiveDir = props.getProperty("archiveDir", "");
     }
 
     public boolean isDarkMode() { return darkMode; }
@@ -27,6 +29,14 @@ public class Settings {
     public void setDarkMode(boolean dark) {
         darkMode = dark;
         props.setProperty("theme", dark ? "dark" : "light");
+        save();
+    }
+
+    public String getArchiveDir() { return archiveDir; }
+
+    public void setArchiveDir(String dir) {
+        archiveDir = dir;
+        props.setProperty("archiveDir", dir);
         save();
     }
 

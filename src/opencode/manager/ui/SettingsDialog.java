@@ -3,6 +3,7 @@ package opencode.manager.ui;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.io.File;
 
 public class SettingsDialog extends JDialog {
     private final Settings settings;
@@ -12,12 +13,16 @@ public class SettingsDialog extends JDialog {
         super(parent, "设置", true);
         this.settings = settings;
         this.onThemeChanged = onThemeChanged;
-        setSize(420, 340);
+        setSize(480, 460);
         setLocationRelativeTo(parent);
 
         JPanel root = new JPanel(new BorderLayout(0, 16));
-        root.setBorder(new EmptyBorder(20, 20, 16, 20));
+        root.setBorder(new EmptyBorder(24, 24, 20, 24));
         root.setBackground(Theme.BG);
+
+        JPanel center = new JPanel();
+        center.setLayout(new BoxLayout(center, BoxLayout.Y_AXIS));
+        center.setOpaque(false);
 
         // --- Theme ---
         JPanel themePanel = sectionPanel("外观主题");
@@ -29,20 +34,42 @@ public class SettingsDialog extends JDialog {
         lightBtn.setSelected(!settings.isDarkMode());
         darkBtn.setSelected(settings.isDarkMode());
         lightBtn.setOpaque(false);
-        lightBtn.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        lightBtn.setFont(new Font("SansSerif", Font.PLAIN, 14));
         darkBtn.setOpaque(false);
-        darkBtn.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        darkBtn.setFont(new Font("SansSerif", Font.PLAIN, 14));
         themePanel.add(lightBtn);
-        themePanel.add(Box.createHorizontalStrut(16));
+        themePanel.add(Box.createHorizontalStrut(24));
         themePanel.add(darkBtn);
-        root.add(themePanel, BorderLayout.NORTH);
+        center.add(themePanel);
+        center.add(Box.createVerticalStrut(12));
+
+        // --- Archive directory ---
+        JPanel archiveSection = sectionPanel("归档目录");
+        archiveSection.setLayout(new BorderLayout(8, 0));
+        JTextField archiveField = new JTextField(settings.getArchiveDir());
+        archiveField.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        JButton browseBtn = new JButton("浏览...");
+        browseBtn.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        browseBtn.addActionListener(e -> {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            if (!archiveField.getText().isEmpty())
+                chooser.setSelectedFile(new File(archiveField.getText()));
+            if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                archiveField.setText(chooser.getSelectedFile().getAbsolutePath());
+            }
+        });
+        archiveSection.add(archiveField, BorderLayout.CENTER);
+        archiveSection.add(browseBtn, BorderLayout.EAST);
+        center.add(archiveSection);
+        center.add(Box.createVerticalStrut(12));
 
         // --- Shortcuts ---
         JPanel shortcutsPanel = sectionPanel("快捷键");
         shortcutsPanel.setLayout(new GridBagLayout());
         GridBagConstraints c = new GridBagConstraints();
         c.fill = GridBagConstraints.HORIZONTAL;
-        c.insets = new Insets(2, 0, 2, 0);
+        c.insets = new Insets(3, 0, 3, 0);
 
         String[][] shortcuts = {
             {"Ctrl+A", "全选"},
@@ -61,40 +88,46 @@ public class SettingsDialog extends JDialog {
             c.gridx = 0;
             c.weightx = 0;
             JLabel keyLabel = new JLabel("  " + shortcuts[i][0]);
-            keyLabel.setFont(new Font("Monospaced", Font.BOLD, 12));
+            keyLabel.setFont(new Font("Monospaced", Font.BOLD, 13));
             keyLabel.setForeground(Theme.ACCENT);
             shortcutsPanel.add(keyLabel, c);
 
             c.gridx = 1;
             c.weightx = 1;
-            c.insets = new Insets(2, 12, 2, 0);
+            c.insets = new Insets(3, 16, 3, 0);
             JLabel descLabel = new JLabel(shortcuts[i][1]);
-            descLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
+            descLabel.setFont(new Font("SansSerif", Font.PLAIN, 14));
             descLabel.setForeground(Theme.TEXT_PRIMARY);
             shortcutsPanel.add(descLabel, c);
-            c.insets = new Insets(2, 0, 2, 0);
+            c.insets = new Insets(3, 0, 3, 0);
         }
 
-        root.add(shortcutsPanel, BorderLayout.CENTER);
+        center.add(shortcutsPanel);
+        root.add(center, BorderLayout.CENTER);
 
-        // --- Close ---
+        // --- Bottom ---
         JButton closeBtn = new JButton("关闭");
-        closeBtn.addActionListener(e -> dispose());
-        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        closeBtn.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        closeBtn.addActionListener(e -> {
+            settings.setArchiveDir(archiveField.getText().trim());
+            dispose();
+        });
+        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         bottom.setOpaque(false);
         bottom.add(closeBtn);
         root.add(bottom, BorderLayout.SOUTH);
 
-        // Apply on radio select
-        javax.swing.event.ChangeListener listener = e -> {
+        // Theme toggle
+        var listener = (java.awt.event.ActionListener) e -> {
             boolean dark = darkBtn.isSelected();
             settings.setDarkMode(dark);
             Theme.applyFlatLaf(dark);
             dispose();
+            settings.setArchiveDir(archiveField.getText().trim());
             onThemeChanged.run();
         };
-        lightBtn.addActionListener(e -> listener.stateChanged(null));
-        darkBtn.addActionListener(e -> listener.stateChanged(null));
+        lightBtn.addActionListener(listener);
+        darkBtn.addActionListener(listener);
 
         getContentPane().add(root);
     }

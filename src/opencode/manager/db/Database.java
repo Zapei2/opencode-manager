@@ -118,6 +118,25 @@ public class Database implements AutoCloseable {
         }
     }
 
+    public void archiveSession(String sessionId) throws Exception {
+        String sql = "UPDATE session SET time_archived = ?, time_updated = ? WHERE id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, Instant.now().toEpochMilli());
+            ps.setLong(2, Instant.now().toEpochMilli());
+            ps.setString(3, sessionId);
+            ps.executeUpdate();
+        }
+    }
+
+    public void unarchiveSession(String sessionId) throws Exception {
+        String sql = "UPDATE session SET time_archived = 0, time_updated = ? WHERE id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, Instant.now().toEpochMilli());
+            ps.setString(2, sessionId);
+            ps.executeUpdate();
+        }
+    }
+
     public void moveSession(String sessionId, String newDirectory, String newProjectId) throws Exception {
         String sql = "UPDATE session SET directory = ?, project_id = ?, time_updated = ? WHERE id = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
