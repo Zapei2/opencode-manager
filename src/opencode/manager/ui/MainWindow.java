@@ -35,7 +35,6 @@ public class MainWindow extends JFrame {
     private static final Color BG = new Color(248, 250, 252);
     private static final Color SIDEBAR_BG = Color.WHITE;
     private static final Color ACCENT = new Color(99, 102, 241);
-    private static final Color ACCENT_HOVER = new Color(79, 70, 229);
     private static final Color TEXT_PRIMARY = new Color(30, 41, 59);
     private static final Color TEXT_SECONDARY = new Color(100, 116, 139);
     private static final Color BORDER = new Color(226, 232, 240);
@@ -241,36 +240,35 @@ public class MainWindow extends JFrame {
         tree.setShowsRootHandles(true);
         tree.setRowHeight(28);
         tree.setBorder(new EmptyBorder(6, 0, 6, 0));
-        tree.setToggleClickCount(1);
+        tree.setToggleClickCount(-1);
         tree.setScrollsOnExpand(true);
         tree.setBackground(SIDEBAR_BG);
         tree.setFont(new Font("SansSerif", Font.PLAIN, 13));
 
         tree.setCellRenderer(new DefaultTreeCellRenderer() {
-            private final JLabel label = new JLabel();
             {
-                label.setOpaque(true);
-                label.setBorder(new EmptyBorder(0, 4, 0, 8));
-                label.setFont(new Font("SansSerif", Font.PLAIN, 13));
+                setBorder(new EmptyBorder(2, 4, 2, 8));
+                setFont(new Font("SansSerif", Font.PLAIN, 13));
+                setLeafIcon(null);
+                setOpenIcon(null);
+                setClosedIcon(null);
             }
             public Component getTreeCellRendererComponent(JTree t, Object value, boolean sel, boolean expanded,
                                                            boolean leaf, int row, boolean hasFocus) {
+                super.getTreeCellRendererComponent(t, value, sel, expanded, leaf, row, hasFocus);
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
                 Object obj = node.getUserObject();
-                label.setBackground(sel ? SELECT_BG : SIDEBAR_BG);
-                label.setForeground(sel ? ACCENT : TEXT_PRIMARY);
 
                 if (node == treeRoot) {
                     int n = allSessions != null ? allSessions.size() : 0;
-                    label.setText("\uD83D\uDCC1  所有会话  " + n);
+                    setText("\uD83D\uDCC1  所有会话  " + n);
                 } else if (obj instanceof DirNode d) {
                     String icon = expanded ? "\uD83D\uDCC2" : "\uD83D\uDCC1";
-                    String cnt = d.sessionCount > 0 ? "  " + d.sessionCount : "";
-                    label.setText(icon + "  " + d.name + cnt);
+                    setText(icon + "  " + d.name + (d.sessionCount > 0 ? "  " + d.sessionCount : ""));
                 } else {
-                    label.setText(String.valueOf(obj));
+                    setText(String.valueOf(obj));
                 }
-                return label;
+                return this;
             }
         });
 
