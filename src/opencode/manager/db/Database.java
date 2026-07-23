@@ -251,26 +251,6 @@ public class Database implements AutoCloseable {
     public void deleteSession(String sessionId) throws Exception {
         conn.setAutoCommit(false);
         try {
-            try (PreparedStatement ps = conn.prepareStatement("DELETE FROM part WHERE session_id = ?")) {
-                ps.setString(1, sessionId);
-                ps.executeUpdate();
-            }
-            try (PreparedStatement ps = conn.prepareStatement("DELETE FROM message WHERE session_id = ?")) {
-                ps.setString(1, sessionId);
-                ps.executeUpdate();
-            }
-            try (PreparedStatement ps = conn.prepareStatement("DELETE FROM todo WHERE session_id = ?")) {
-                ps.setString(1, sessionId);
-                ps.executeUpdate();
-            }
-            try (PreparedStatement ps = conn.prepareStatement("DELETE FROM session_entry WHERE session_id = ?")) {
-                ps.setString(1, sessionId);
-                ps.executeUpdate();
-            }
-            try (PreparedStatement ps = conn.prepareStatement("DELETE FROM session_input WHERE session_id = ?")) {
-                ps.setString(1, sessionId);
-                ps.executeUpdate();
-            }
             try (PreparedStatement ps = conn.prepareStatement("DELETE FROM session WHERE id = ?")) {
                 ps.setString(1, sessionId);
                 ps.executeUpdate();
