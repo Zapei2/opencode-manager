@@ -1,70 +1,45 @@
 # OpenCode Manager
 
-A desktop tool to browse and manage local [OpenCode](https://github.com/anomalyco/opencode) sessions.
+A desktop companion for [OpenCode](https://github.com/anomalyco/opencode) that makes session management visual and efficient.
 
 > 🇨🇳 [中文版](README.zh.md)
 
 ---
 
-## Introduction
+## Why This?
 
-OpenCode Manager is a cross-platform desktop application built with Tauri. It reads OpenCode's SQLite database directly with zero configuration.
+OpenCode's built-in TUI is great for coding but offers no way to **visually browse, organize, or batch-manage** sessions. Over time, your session list grows into a long, undifferentiated wall of text — making it hard to clean up old projects, archive finished work, or find that one conversation from last week.
 
-## Features
+OpenCode Manager gives you a proper desktop interface to:
 
-- 📂 **Directory Tree** — Sessions organized by filesystem path, with collapsible folders
-- 🔍 **Search** — Real-time filtering by title and directory path
-- 📋 **Session Management** — Rename, copy, paste, move, archive, delete
-- 🎯 **Multi-Select** — Ctrl+click to toggle, Shift+click for range, drag to select
-- 🌓 **Dark/Light Theme** — Switchable and persistent
-- 🌐 **i18n** — Built-in Chinese and English support
-- ⌨️ **Keyboard Shortcuts** — Full shortcut coverage
-- 📦 **Zero Runtime** — No JRE or JDK required
+- **See everything at a glance** — sessions in a sortable table, organized by directory tree
+- **Bulk delete, archive, move, or rename** — select multiple sessions at once (click, shift-click, or drag)
+- **Find anything fast** — real-time search by title or directory path
+- **Clean up with confidence** — archive old sessions instead of losing them; backup before deletion
 
-## Screenshots
-
-*(Add screenshots here)*
-
-## Shortcuts
-
-| Shortcut | Action |
-|----------|--------|
-| Ctrl+A | Select All |
-| Ctrl+Shift+C | Copy Session |
-| Ctrl+Shift+V | Paste Session |
-| Ctrl+R | Rename |
-| Ctrl+D | Delete |
-| Ctrl+E | Archive/Unarchive |
-| Ctrl+M | Move |
-| F5 | Refresh |
-| Ctrl+F | Search |
+It reads your local OpenCode database directly. No server, no sync, no configuration.
 
 ## Download
 
-Get the latest package from [Releases](https://github.com/Zapei2/opencode-manager/releases):
+| Platform | Format |
+|----------|--------|
+| Linux | `.deb` (Debian/Ubuntu) |
+| Windows | `.exe` installer |
 
-- **Linux**: `.deb` package (Debian/Ubuntu)
-- **Windows**: `.exe` installer (NSIS)
+Grab the latest from [Releases](https://github.com/Zapei2/opencode-manager/releases).
 
-## Development
+## Build from Source
 
 ```bash
-# Clone
 git clone https://github.com/Zapei2/opencode-manager.git
 cd opencode-manager
-
-# Install frontend deps
 npm install
-
-# Dev mode (hot reload)
-npm run tauri dev
-
-# Production build
-npx tauri build --bundles deb   # Linux
-npx tauri build --bundles nsis  # Windows
+npm run tauri dev          # development
+npx tauri build --bundles deb   # Linux package
+npx tauri build --bundles nsis  # Windows installer
 ```
 
-### Linux System Dependencies
+Linux system dependencies:
 
 ```bash
 sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
@@ -74,12 +49,11 @@ sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev
 
 | Layer | Technology |
 |-------|-----------|
-| Desktop Framework | [Tauri v2](https://v2.tauri.app) |
-| Backend | Rust 2021 |
-| Database | SQLite via rusqlite |
-| Frontend | HTML + CSS + JavaScript (Vanilla) |
-| Build Tool | Vite 6 |
+| Desktop | [Tauri v2](https://v2.tauri.app) |
+| Backend | Rust |
+| Database | SQLite (rusqlite) |
+| Frontend | HTML/CSS/JS + Vite |
 
 ## License
 
-[MIT](LICENSE)
+MIT

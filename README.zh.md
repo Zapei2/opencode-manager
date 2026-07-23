@@ -1,74 +1,45 @@
 # OpenCode Manager
 
-浏览和管理本机 [OpenCode](https://github.com/anomalyco/opencode) 会话的桌面工具。
+OpenCode 的桌面伴侣工具，让会话管理变得直观高效。
 
 > 🇬🇧 [English](README.md)
 
 ---
 
-## 简介
+## 为什么需要这个？
 
-OpenCode Manager 是一个基于 Tauri 的跨平台桌面应用，直接读取 OpenCode 的 SQLite 数据库，无需任何配置即可使用。
+OpenCode 自带的 TUI 在编码场景下很好用，但**无法可视化地浏览、整理或批量管理**会话。随着时间推移，会话列表会变成一长串没有区分度的文字——清理旧项目、归档已完成的工作、找到上周的某次对话，都变得很困难。
 
-## 功能
+OpenCode Manager 提供一个纯正的桌面界面，让你可以：
 
-- 📂 **目录树浏览** — 按文件系统路径组织会话，支持展开/折叠
-- 🔍 **搜索过滤** — 实时搜索标题和目录路径
-- 📋 **会话管理** — 重命名、复制、粘贴、移动、归档、删除
-- 🎯 **多选操作** — Ctrl+点击切换选中，Shift+点击范围选中，鼠标拖拽批量选择
-- 🌓 **深色/浅色主题** — 一键切换，自动持久化
-- 🌐 **中英文界面** — 内置双语支持，设置中切换
-- ⌨️ **键盘快捷键** — 全套快捷键操作，效率拉满
-- 📦 **零依赖** — 无需安装 Java 或其他运行时
+- **一目了然** — 会话以表格呈现，按目录树组织，支持排序
+- **批量操作** — 选择多个会话（点击、Shift+点击、或拖拽），一键删除/归档/移动/重命名
+- **快速查找** — 实时搜索标题或目录路径
+- **放心清理** — 归档旧会话而不是直接丢失，删除前自动备份数据库
 
-## 截图
-
-*(等待添加)*
-
-## 快捷键
-
-| 快捷键 | 操作 |
-|--------|------|
-| Ctrl+A | 全选 |
-| Ctrl+Shift+C | 复制会话 |
-| Ctrl+Shift+V | 粘贴会话 |
-| Ctrl+R | 重命名 |
-| Ctrl+D | 删除 |
-| Ctrl+E | 归档/取消归档 |
-| Ctrl+M | 移动 |
-| F5 | 刷新 |
-| Ctrl+F | 搜索 |
+它直接读取本机 OpenCode 的 SQLite 数据库。无需服务器、无需同步、无需配置。
 
 ## 下载
 
-从 [Releases](https://github.com/Zapei2/opencode-manager/releases) 下载对应系统的安装包：
+| 平台 | 格式 |
+|------|------|
+| 🐧 Linux | `.deb`（Debian/Ubuntu） |
+| 🪟 Windows | `.exe` 安装包 |
 
-| 平台 | 格式 | 说明 |
-|------|------|------|
-| 🐧 Linux | `.deb` | Debian/Ubuntu 双击安装 |
-| 🪟 Windows | `.exe` | NSIS 安装包，双击安装 |
+从 [Releases](https://github.com/Zapei2/opencode-manager/releases) 获取最新版本。
 
-> 两个平台均**无需额外安装运行环境**，开箱即用。
-
-## 开发
+## 从源码构建
 
 ```bash
-# 克隆
 git clone https://github.com/Zapei2/opencode-manager.git
 cd opencode-manager
-
-# 安装前端依赖
 npm install
-
-# 开发模式（热重载）
-npm run tauri dev
-
-# 生产构建
-npx tauri build --bundles deb   # Linux
-npx tauri build --bundles nsis  # Windows
+npm run tauri dev              # 开发模式
+npx tauri build --bundles deb   # Linux 打包
+npx tauri build --bundles nsis  # Windows 打包
 ```
 
-### Linux 系统依赖
+Linux 系统依赖：
 
 ```bash
 sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
@@ -79,11 +50,10 @@ sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev
 | 层 | 技术 |
 |----|------|
 | 桌面框架 | [Tauri v2](https://v2.tauri.app) |
-| 后端语言 | Rust 2021 |
-| 数据库 | SQLite via rusqlite |
-| 前端 | HTML + CSS + JavaScript |
-| 构建工具 | Vite 6 |
+| 后端 | Rust |
+| 数据库 | SQLite (rusqlite) |
+| 前端 | HTML/CSS/JS + Vite |
 
 ## 许可证
 
-[MIT](LICENSE)
+MIT
