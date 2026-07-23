@@ -641,20 +641,11 @@ public class MainWindow extends JFrame {
     private void deleteSelected() {
         List<SessionRecord> selected = getSelectedSessions();
         if (selected.isEmpty()) { showWarning("请先选择要删除的会话"); return; }
-        StringBuilder msg = new StringBuilder("确定要永久删除以下 " + selected.size() + " 个会话吗？\n\n");
-        for (SessionRecord s : selected)
-            msg.append("  \u2022 ").append(s.title).append(" (").append(s.messageCount).append(" 条消息)\n");
-        msg.append("\n此操作不可撤销！");
-        JCheckBox backupCheck = new JCheckBox("删除前备份数据库", true);
-        int n = JOptionPane.showOptionDialog(this, new Object[]{msg.toString(), backupCheck},
-            "确认删除", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE,
-            null, new Object[]{"确认删除", "取消"}, "取消");
-        if (n != 0) return;
         try {
-            if (backupCheck.isSelected()) db.backupDatabase();
+            db.backupDatabase();
             for (SessionRecord s : selected) db.deleteSession(s.id);
             refreshAll();
-            showInfo("成功删除 " + selected.size() + " 个会话");
+            showInfo("已删除 " + selected.size() + " 个会话（已自动备份）");
         } catch (Exception ex) { showError("删除失败", ex); }
     }
 
