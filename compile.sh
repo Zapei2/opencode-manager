@@ -26,6 +26,9 @@ javac -d "$OUT" -cp "$CP" \
     src/opencode/manager/db/SessionRecord.java \
     src/opencode/manager/db/Database.java \
     src/opencode/manager/ui/SessionTableModel.java \
+    src/opencode/manager/ui/Theme.java \
+    src/opencode/manager/ui/Settings.java \
+    src/opencode/manager/ui/SettingsDialog.java \
     src/opencode/manager/ui/MainWindow.java \
     src/opencode/manager/Main.java
 

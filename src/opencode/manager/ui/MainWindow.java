@@ -33,14 +33,7 @@ public class MainWindow extends JFrame {
     private boolean updatingTree;
     private List<String> clipboardSessionIds;
 
-    private static final Color BG = new Color(248, 250, 252);
-    private static final Color SIDEBAR_BG = Color.WHITE;
-    private static final Color ACCENT = new Color(99, 102, 241);
-    private static final Color TEXT_PRIMARY = new Color(30, 41, 59);
-    private static final Color TEXT_SECONDARY = new Color(100, 116, 139);
-    private static final Color BORDER = new Color(226, 232, 240);
-    private static final Color ROW_ALT = new Color(248, 250, 252);
-    private static final Color SELECT_BG = new Color(238, 242, 255);
+    private Settings settings;
 
     static class DirNode {
         String name, fullPath;
@@ -55,10 +48,12 @@ public class MainWindow extends JFrame {
     public MainWindow(Database db) {
         super("OpenCode 会话管理器");
         this.db = db;
+        this.settings = new Settings();
+        Theme.loadColors(settings.isDarkMode());
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1320, 800);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(BG);
+        getContentPane().setBackground(Theme.BG);
 
         tableModel = new SessionTableModel();
         table = new JTable(tableModel);
@@ -85,7 +80,7 @@ public class MainWindow extends JFrame {
 
         statusLabel = new JLabel(" ");
         statusLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        statusLabel.setForeground(TEXT_SECONDARY);
+        statusLabel.setForeground(Theme.TEXT_SECONDARY);
         statusLabel.setBorder(new EmptyBorder(6, 14, 6, 14));
 
         setupLayout();
@@ -96,7 +91,7 @@ public class MainWindow extends JFrame {
 
     private void setupTable() {
         table.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        table.setForeground(TEXT_PRIMARY);
+        table.setForeground(Theme.TEXT_PRIMARY);
         table.setRowHeight(36);
         table.setShowGrid(false);
         table.setIntercellSpacing(new Dimension(0, 0));
@@ -118,6 +113,19 @@ public class MainWindow extends JFrame {
         table.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("ctrl A"), "selectAllSessions");
         table.getActionMap().put("selectAllSessions", new AbstractAction() {
             public void actionPerformed(ActionEvent e) { table.selectAll(); }
+        });
+
+        bindShortcut("ctrl shift C", "copySessions", e -> copySelected());
+        bindShortcut("ctrl shift V", "pasteSessions", e -> pasteSelected());
+        bindShortcut("ctrl R", "renameSession", e -> renameSelected());
+        bindShortcut("DELETE", "deleteSessions", e -> deleteSelected());
+        bindShortcut("ctrl M", "moveSession", e -> moveSelected());
+        bindShortcut("F5", "refresh", e -> refreshAll());
+
+        // Ctrl+F → focus search (on root pane for global reach)
+        getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("ctrl F"), "focusSearch");
+        getRootPane().getActionMap().put("focusSearch", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) { searchField.requestFocusInWindow(); searchField.selectAll(); }
         });
 
         setupTablePopup();
@@ -183,15 +191,15 @@ public class MainWindow extends JFrame {
             boolean archived = s != null && s.isArchived();
 
             label.setFont(new Font("SansSerif", col == 1 ? Font.PLAIN : Font.PLAIN, col == 1 ? 13 : 12));
-            label.setForeground(TEXT_PRIMARY);
+            label.setForeground(Theme.TEXT_PRIMARY);
 
             if (sel) {
-                label.setBackground(SELECT_BG);
-                label.setForeground(TEXT_PRIMARY);
+                label.setBackground(Theme.SELECT_BG);
+                label.setForeground(Theme.TEXT_PRIMARY);
             } else if (archived) {
                 label.setBackground(new Color(250, 250, 250));
             } else {
-                label.setBackground(row % 2 == 0 ? Color.WHITE : ROW_ALT);
+                label.setBackground(row % 2 == 0 ? Theme.TABLE_BG : Theme.ROW_ALT);
             }
 
             if (col == 0) {
@@ -204,7 +212,7 @@ public class MainWindow extends JFrame {
             } else if (col == 2) {
                 String d = value != null ? value.toString() : "";
                 label.setText(d);
-                label.setForeground(TEXT_SECONDARY);
+                label.setForeground(Theme.TEXT_SECONDARY);
                 label.setHorizontalAlignment(SwingConstants.LEFT);
             } else if (col == 3 || col == 4 || col == 5) {
                 label.setText(value != null ? value.toString() : "");
@@ -227,12 +235,12 @@ public class MainWindow extends JFrame {
         private final JLabel label = new JLabel();
         {
             label.setOpaque(true);
-            label.setBackground(BG);
-            label.setForeground(TEXT_SECONDARY);
+            label.setBackground(Theme.BG);
+            label.setForeground(Theme.TEXT_SECONDARY);
             label.setFont(new Font("SansSerif", Font.BOLD, 11));
             label.setBorder(BorderFactory.createCompoundBorder(
                 new EmptyBorder(0, 8, 0, 8),
-                BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER)));
+                BorderFactory.createMatteBorder(0, 0, 1, 0, Theme.BORDER)));
         }
         public Component getTableCellRendererComponent(JTable t, Object value, boolean sel, boolean focus, int row, int col) {
             label.setText(value != null ? value.toString() : "");
@@ -249,7 +257,7 @@ public class MainWindow extends JFrame {
         tree.setBorder(new EmptyBorder(6, 0, 6, 0));
         tree.setToggleClickCount(-1);
         tree.setScrollsOnExpand(true);
-        tree.setBackground(SIDEBAR_BG);
+        tree.setBackground(Theme.SIDEBAR_BG);
         tree.setFont(new Font("SansSerif", Font.PLAIN, 13));
 
         tree.setCellRenderer(new DefaultTreeCellRenderer() {
@@ -299,7 +307,7 @@ public class MainWindow extends JFrame {
     private void setupLayout() {
         // Top toolbar
         JPanel toolbar = new JPanel(new BorderLayout());
-        toolbar.setBackground(BG);
+        toolbar.setBackground(Theme.BG);
         toolbar.setBorder(new EmptyBorder(8, 12, 6, 12));
 
         JPanel leftTool = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
@@ -317,38 +325,42 @@ public class MainWindow extends JFrame {
         JButton deselectBtn = miniBtn("取消选择", e -> table.clearSelection());
         rightTool.add(selectAllBtn);
         rightTool.add(deselectBtn);
+        rightTool.add(Box.createHorizontalStrut(8));
+        JButton settingsBtn = miniBtn("⚙  设置", e -> openSettings());
+        rightTool.add(settingsBtn);
         toolbar.add(rightTool, BorderLayout.EAST);
 
         // Action bar
         JPanel actionBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 6));
-        actionBar.setBackground(Color.WHITE);
+        actionBar.setBackground(Theme.TABLE_BG);
         actionBar.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER),
+            BorderFactory.createMatteBorder(0, 0, 1, 0, Theme.BORDER),
             new EmptyBorder(0, 8, 0, 8)));
         actionBar.add(actionBtn("✏  重命名", e -> renameSelected()));
         actionBar.add(actionBtn("📋  复制", e -> copySelected()));
+        actionBar.add(actionBtn("📌  粘贴", e -> pasteSelected()));
         actionBar.add(actionBtn("📦  移动", e -> moveSelected()));
         actionBar.add(actionBtn("🗑  删除", e -> deleteSelected()));
         actionBar.add(Box.createHorizontalStrut(12));
-        actionBar.add(new JSeparator(JSeparator.VERTICAL) {{ setPreferredSize(new Dimension(1, 22)); setForeground(BORDER); }});
+        actionBar.add(new JSeparator(JSeparator.VERTICAL) {{ setPreferredSize(new Dimension(1, 22)); setForeground(Theme.BORDER); }});
         actionBar.add(Box.createHorizontalStrut(8));
         actionBar.add(actionBtn("🔄  刷新", e -> refreshAll()));
         actionBar.add(actionBtn("💾  备份", e -> backupDatabase()));
 
         // Sidebar
         JPanel sidebar = new JPanel(new BorderLayout());
-        sidebar.setBackground(SIDEBAR_BG);
-        sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, BORDER));
+        sidebar.setBackground(Theme.SIDEBAR_BG);
+        sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Theme.BORDER));
 
         JLabel sideTitle = new JLabel("\uD83D\uDCC1  目录");
         sideTitle.setFont(new Font("SansSerif", Font.BOLD, 12));
-        sideTitle.setForeground(TEXT_SECONDARY);
+        sideTitle.setForeground(Theme.TEXT_SECONDARY);
         sideTitle.setBorder(new EmptyBorder(10, 12, 6, 12));
         sidebar.add(sideTitle, BorderLayout.NORTH);
 
         JScrollPane treeScroll = new JScrollPane(tree);
         treeScroll.setBorder(null);
-        treeScroll.setBackground(SIDEBAR_BG);
+        treeScroll.setBackground(Theme.SIDEBAR_BG);
         sidebar.add(treeScroll, BorderLayout.CENTER);
 
         sidebar.setPreferredSize(new Dimension(250, 0));
@@ -356,11 +368,10 @@ public class MainWindow extends JFrame {
 
         // Table area
         JPanel tablePanel = new JPanel(new BorderLayout());
-        tablePanel.setBackground(Color.WHITE);
-        tablePanel.add(actionBar, BorderLayout.NORTH);
+        tablePanel.setBackground(Theme.TABLE_BG);
         JScrollPane tableScroll = new JScrollPane(table);
         tableScroll.setBorder(null);
-        tableScroll.setBackground(Color.WHITE);
+        tableScroll.setBackground(Theme.TABLE_BG);
         tablePanel.add(tableScroll, BorderLayout.CENTER);
 
         // Split
@@ -371,12 +382,12 @@ public class MainWindow extends JFrame {
 
         // Status bar
         JPanel statusBar = new JPanel(new BorderLayout());
-        statusBar.setBackground(BG);
-        statusBar.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER));
+        statusBar.setBackground(Theme.BG);
+        statusBar.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.BORDER));
         statusBar.add(statusLabel, BorderLayout.WEST);
         JLabel hint = new JLabel("Ctrl+A 全选  |  双击重命名  |  右键菜单");
         hint.setFont(new Font("SansSerif", Font.PLAIN, 11));
-        hint.setForeground(TEXT_SECONDARY);
+        hint.setForeground(Theme.TEXT_SECONDARY);
         hint.setBorder(new EmptyBorder(6, 0, 6, 14));
         statusBar.add(hint, BorderLayout.EAST);
 
@@ -388,7 +399,7 @@ public class MainWindow extends JFrame {
     private JButton actionBtn(String text, ActionListener l) {
         JButton btn = new JButton(text);
         btn.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        btn.setForeground(TEXT_PRIMARY);
+        btn.setForeground(Theme.TEXT_PRIMARY);
         btn.setFocusPainted(false);
         btn.addActionListener(l);
         return btn;
@@ -397,7 +408,7 @@ public class MainWindow extends JFrame {
     private JButton miniBtn(String text, ActionListener l) {
         JButton btn = new JButton(text);
         btn.setFont(new Font("SansSerif", Font.PLAIN, 11));
-        btn.setForeground(ACCENT);
+        btn.setForeground(Theme.ACCENT);
         btn.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
         btn.setContentAreaFilled(false);
         btn.setFocusPainted(false);
@@ -708,6 +719,23 @@ public class MainWindow extends JFrame {
             db.backupDatabase();
             showInfo("数据库已备份到:\n" + db.getDbPath().getParent().resolve("opencode.db.backup.*"));
         } catch (Exception ex) { showError("备份失败", ex); }
+    }
+
+    // ======================== SETTINGS ========================
+
+    private void openSettings() {
+        new SettingsDialog(this, settings, () -> {
+            Theme.loadColors(settings.isDarkMode());
+            SwingUtilities.updateComponentTreeUI(this);
+            refreshAll();
+        }).setVisible(true);
+    }
+
+    private void bindShortcut(String key, String name, ActionListener action) {
+        table.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke(key), name);
+        table.getActionMap().put(name, new AbstractAction() {
+            public void actionPerformed(ActionEvent e) { action.actionPerformed(e); }
+        });
     }
 
     // ======================== DIALOGS ========================

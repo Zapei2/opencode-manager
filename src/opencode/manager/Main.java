@@ -1,6 +1,7 @@
 package opencode.manager;
 
-import com.formdev.flatlaf.FlatLightLaf;
+import opencode.manager.ui.Settings;
+import opencode.manager.ui.Theme;
 import opencode.manager.db.Database;
 import opencode.manager.ui.MainWindow;
 import javax.swing.*;
@@ -8,7 +9,9 @@ import java.awt.*;
 
 public class Main {
     public static void main(String[] args) {
-        FlatLightLaf.setup();
+        Settings settings = new Settings();
+        Theme.applyFlatLaf(settings.isDarkMode());
+
         UIManager.put("Button.arc", 10);
         UIManager.put("Button.margin", new Insets(4, 12, 4, 12));
         UIManager.put("Button.font", new Font("SansSerif", Font.PLAIN, 12));
