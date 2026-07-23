@@ -1,24 +1,10 @@
-# Java
-target/
-*.class
-*.jar
-!target/*.jar
-*.log
+# Tauri
+src-tauri/target/
 
-# Gradle
-.gradle/
-build/
-
-# IDE
-.idea/workspace.xml
-.idea/tasks.xml
-.idea/shelf/
-.idea/dictionaries/
-.idea/usage.statistics.xml
+# Node
+node_modules/
+dist/
 
 # OS
 .DS_Store
 Thumbs.db
-
-# Build output
-dist/

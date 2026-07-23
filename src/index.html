@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenCode Manager</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Toolbar -->
+    <div id="toolbar">
+      <div id="toolbar-left">
+        <input type="text" id="search" placeholder="🔍  搜索会话..." />
+        <label class="checkbox-label">
+          <input type="checkbox" id="showArchived" /> <span id="showArchivedLabel">Show archived</span>
+        </label>
+      </div>
+      <div id="toolbar-center">
+        <button class="tool-btn" data-action="rename">✏  重命名</button>
+        <button class="tool-btn" data-action="copy">📋  复制</button>
+        <button class="tool-btn" data-action="paste">📌  粘贴</button>
+        <button class="tool-btn" data-action="move">📦  移动</button>
+        <button class="tool-btn archive-btn" data-action="archive">🗃  归档</button>
+        <button class="tool-btn delete-btn" data-action="delete">🗑  删除</button>
+        <span class="separator"></span>
+        <button class="tool-btn refresh-btn" data-action="refresh">🔄  刷新</button>
+        <button class="tool-btn backup-btn" data-action="backup">💾  备份</button>
+      </div>
+      <div id="toolbar-right">
+        <button class="link-btn" data-action="selectAll">全选</button>
+        <button class="link-btn" data-action="deselect">取消选择</button>
+        <button id="settings-btn" title="设置">⚙</button>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div id="main">
+      <!-- Sidebar -->
+      <div id="sidebar">
+        <div id="sidebar-title">📁  目录</div>
+        <div id="tree"></div>
+      </div>
+
+      <!-- Table -->
+      <div id="table-area">
+        <div id="table-header">
+          <div class="th th-title">Title</div>
+          <div class="th th-dir">Directory</div>
+          <div class="th th-msg">Messages</div>
+          <div class="th th-tokens">Tokens</div>
+          <div class="th th-agent">Agent</div>
+          <div class="th th-provider">Provider</div>
+          <div class="th th-model">Model</div>
+          <div class="th th-time">Updated</div>
+        </div>
+        <div id="table-body"></div>
+      </div>
+    </div>
+
+    <!-- Status bar -->
+    <div id="statusbar">
+      <span id="status-text">加载中...</span>
+      <span id="status-hint">Ctrl+A 全选 · 双击重命名 · 右键菜单</span>
+    </div>
+  </div>
+
+  <!-- Context menu -->
+  <div id="context-menu" class="context-menu hidden">
+    <div class="menu-item" data-action="rename">重命名</div>
+    <div class="menu-item" data-action="copy">复制</div>
+    <div class="menu-item paste-item" data-action="paste">粘贴</div>
+    <div class="menu-item" data-action="move">移动</div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" data-action="archive">归档</div>
+    <div class="menu-item" data-action="delete">删除</div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" data-action="copyId">复制会话 ID</div>
+    <div class="menu-item" data-action="detail">查看详情</div>
+  </div>
+
+  <!-- Dialogs -->
+  <div id="dialog-overlay" class="hidden">
+    <div id="dialog-box">
+      <div id="dialog-title"></div>
+      <div id="dialog-body"></div>
+      <div id="dialog-buttons"></div>
+    </div>
+  </div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
