@@ -10,5 +10,6 @@
     <orderEntry type="library" name="sqlite-jdbc" level="project" />
     <orderEntry type="library" name="slf4j-api" level="project" />
     <orderEntry type="library" name="slf4j-simple" level="project" />
+    <orderEntry type="library" name="flatlaf" level="project" />
   </component>
 </module>

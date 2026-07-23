@@ -1,14 +1,20 @@
 package opencode.manager;
 
+import com.formdev.flatlaf.FlatLightLaf;
 import opencode.manager.db.Database;
 import opencode.manager.ui.MainWindow;
 import javax.swing.*;
 
 public class Main {
     public static void main(String[] args) {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception ignored) {}
+        FlatLightLaf.setup();
+        UIManager.put("Button.arc", 8);
+        UIManager.put("Component.arrowType", "chevron");
+        UIManager.put("Tree.rowHeight", 28);
+        UIManager.put("Table.rowHeight", 30);
+        UIManager.put("TabbedPane.tabHeight", 32);
+        UIManager.put("ScrollBar.width", 10);
+        UIManager.put("SplitPaneDivider.style", "grip");
 
         SwingUtilities.invokeLater(() -> {
             try {
