@@ -4,7 +4,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
-LIBS="lib/sqlite-jdbc-3.45.3.0.jar:lib/flatlaf-3.4.1.jar"
+LIBS="lib/sqlite-jdbc-3.45.3.0.jar:lib/flatlaf-3.4.1.jar:lib/flatlaf-intellij-themes-3.4.1.jar"
 SLF4J_API="/usr/lib/slf4j-api-2.0.16.jar"
 SLF4J_IMPL="/usr/lib/slf4j-simple-2.0.16.jar"
 

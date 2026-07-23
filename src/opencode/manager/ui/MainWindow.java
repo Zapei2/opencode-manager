@@ -49,7 +49,7 @@ public class MainWindow extends JFrame {
         super("OpenCode 会话管理器");
         this.db = db;
         this.settings = new Settings();
-        Theme.loadColors(settings.isDarkMode());
+        Theme.loadColors();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1320, 800);
         setLocationRelativeTo(null);
@@ -310,30 +310,42 @@ tree.setFont(new Font("SansSerif", Font.PLAIN, 17));
     // ======================== LAYOUT ========================
 
     private void setupLayout() {
-        // Top toolbar
-        JPanel toolbar = new JPanel(new BorderLayout());
-        toolbar.setBackground(Theme.BG);
-        toolbar.setBorder(new EmptyBorder(8, 12, 6, 12));
+        // ── Toolbar ──
+        JPanel toolbar = new JPanel(new BorderLayout(12, 0));
+        toolbar.setBorder(new EmptyBorder(10, 14, 8, 14));
 
-        JPanel leftTool = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        JPanel leftTool = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         leftTool.setOpaque(false);
-        searchField.setPreferredSize(new Dimension(240, 30));
-        searchField.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        searchField.setPreferredSize(new Dimension(220, 32));
+        searchField.putClientProperty("JTextField.leadingIcon", "\uD83D\uDD0D");
         leftTool.add(searchField);
-        leftTool.add(Box.createHorizontalStrut(10));
         leftTool.add(showArchived);
         toolbar.add(leftTool, BorderLayout.WEST);
 
+        JPanel centerTool = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        centerTool.setOpaque(false);
+        centerTool.add(toolBtn("✏  重命名", e -> renameSelected()));
+        centerTool.add(toolBtn("📋  复制", e -> copySelected()));
+        centerTool.add(toolBtn("📌  粘贴", e -> pasteSelected()));
+        centerTool.add(toolBtn("📦  移动", e -> moveSelected()));
+        centerTool.add(toolBtn("🗃  归档", e -> archiveSelected()));
+        centerTool.add(toolBtn("🗑  删除", e -> deleteSelected()));
+        JSeparator sep = new JSeparator(JSeparator.VERTICAL);
+        sep.setPreferredSize(new Dimension(1, 24));
+        centerTool.add(Box.createHorizontalStrut(6));
+        centerTool.add(sep);
+        centerTool.add(Box.createHorizontalStrut(6));
+        centerTool.add(toolBtn("🔄  刷新", e -> refreshAll()));
+        centerTool.add(toolBtn("💾  备份", e -> backupDatabase()));
+        toolbar.add(centerTool, BorderLayout.CENTER);
+
         JPanel rightTool = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
         rightTool.setOpaque(false);
-        JButton selectAllBtn = miniBtn("全选", e -> table.selectAll());
-        JButton deselectBtn = miniBtn("取消选择", e -> table.clearSelection());
-        rightTool.add(selectAllBtn);
-        rightTool.add(deselectBtn);
-        rightTool.add(Box.createHorizontalStrut(8));
+        rightTool.add(linkBtn("全选", e -> table.selectAll()));
+        rightTool.add(linkBtn("取消选择", e -> table.clearSelection()));
+        rightTool.add(Box.createHorizontalStrut(6));
         JButton settingsBtn = new JButton("\u2699");
-        settingsBtn.setFont(new Font("SansSerif", Font.PLAIN, 18));
-        settingsBtn.setForeground(Theme.ACCENT);
+        settingsBtn.setFont(new Font("SansSerif", Font.PLAIN, 20));
         settingsBtn.setBorder(BorderFactory.createEmptyBorder(2, 6, 2, 6));
         settingsBtn.setContentAreaFilled(false);
         settingsBtn.setFocusPainted(false);
@@ -343,64 +355,41 @@ tree.setFont(new Font("SansSerif", Font.PLAIN, 17));
         rightTool.add(settingsBtn);
         toolbar.add(rightTool, BorderLayout.EAST);
 
-        // Action bar
-        JPanel actionBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 6));
-        actionBar.setBackground(Theme.TABLE_BG);
-        actionBar.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createMatteBorder(0, 0, 1, 0, Theme.BORDER),
-            new EmptyBorder(0, 8, 0, 8)));
-        actionBar.add(actionBtn("✏  重命名", e -> renameSelected()));
-        actionBar.add(actionBtn("📋  复制", e -> copySelected()));
-        actionBar.add(actionBtn("📌  粘贴", e -> pasteSelected()));
-        actionBar.add(actionBtn("📦  移动", e -> moveSelected()));
-        actionBar.add(actionBtn("🗃  归档", e -> archiveSelected()));
-        actionBar.add(actionBtn("🗑  删除", e -> deleteSelected()));
-        actionBar.add(Box.createHorizontalStrut(12));
-        actionBar.add(new JSeparator(JSeparator.VERTICAL) {{ setPreferredSize(new Dimension(1, 22)); setForeground(Theme.BORDER); }});
-        actionBar.add(Box.createHorizontalStrut(8));
-        actionBar.add(actionBtn("🔄  刷新", e -> refreshAll()));
-        actionBar.add(actionBtn("💾  备份", e -> backupDatabase()));
-
-        // Sidebar
+        // ── Sidebar ──
         JPanel sidebar = new JPanel(new BorderLayout());
         sidebar.setBackground(Theme.SIDEBAR_BG);
-        sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Theme.BORDER));
 
         JLabel sideTitle = new JLabel("\uD83D\uDCC1  目录");
-        sideTitle.setFont(new Font("SansSerif", Font.BOLD, 16));
+        sideTitle.setFont(new Font("SansSerif", Font.BOLD, 15));
         sideTitle.setForeground(Theme.TEXT_SECONDARY);
-        sideTitle.setBorder(new EmptyBorder(12, 14, 8, 14));
+        sideTitle.setBorder(new EmptyBorder(14, 16, 8, 16));
         sidebar.add(sideTitle, BorderLayout.NORTH);
 
         JScrollPane treeScroll = new JScrollPane(tree);
         treeScroll.setBorder(null);
-        treeScroll.setBackground(Theme.SIDEBAR_BG);
         sidebar.add(treeScroll, BorderLayout.CENTER);
 
-        sidebar.setPreferredSize(new Dimension(250, 0));
-        sidebar.setMinimumSize(new Dimension(180, 0));
+        sidebar.setPreferredSize(new Dimension(260, 0));
+        sidebar.setMinimumSize(new Dimension(200, 0));
 
-        // Table area
+        // ── Table area ──
         JPanel tablePanel = new JPanel(new BorderLayout());
-        tablePanel.setBackground(Theme.TABLE_BG);
         JScrollPane tableScroll = new JScrollPane(table);
         tableScroll.setBorder(null);
-        tableScroll.setBackground(Theme.TABLE_BG);
         tablePanel.add(tableScroll, BorderLayout.CENTER);
 
-        // Split
+        // ── Split ──
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, sidebar, tablePanel);
-        split.setDividerSize(4);
-        split.setResizeWeight(0.18);
+        split.setDividerSize(3);
+        split.setResizeWeight(0.20);
         split.setBorder(null);
 
-        // Status bar
+        // ── Status bar ──
         JPanel statusBar = new JPanel(new BorderLayout());
-        statusBar.setBackground(Theme.BG);
         statusBar.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.BORDER));
         statusBar.add(statusLabel, BorderLayout.WEST);
-        JLabel hint = new JLabel("Ctrl+A 全选  |  双击重命名  |  右键菜单");
-        hint.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        JLabel hint = new JLabel("Ctrl+A 全选  ·  双击重命名  ·  右键菜单");
+        hint.setFont(new Font("SansSerif", Font.PLAIN, 12));
         hint.setForeground(Theme.TEXT_SECONDARY);
         hint.setBorder(new EmptyBorder(6, 0, 6, 14));
         statusBar.add(hint, BorderLayout.EAST);
@@ -410,20 +399,18 @@ tree.setFont(new Font("SansSerif", Font.PLAIN, 17));
         getContentPane().add(statusBar, BorderLayout.SOUTH);
     }
 
-    private JButton actionBtn(String text, ActionListener l) {
+    private JButton toolBtn(String text, ActionListener l) {
         JButton btn = new JButton(text);
-        btn.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        btn.setForeground(Theme.TEXT_PRIMARY);
+        btn.setFont(new Font("SansSerif", Font.PLAIN, 13));
         btn.setFocusPainted(false);
         btn.addActionListener(l);
         return btn;
     }
 
-    private JButton miniBtn(String text, ActionListener l) {
+    private JButton linkBtn(String text, ActionListener l) {
         JButton btn = new JButton(text);
-        btn.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        btn.setForeground(Theme.ACCENT);
-        btn.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
+        btn.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        btn.setBorder(BorderFactory.createEmptyBorder(2, 6, 2, 6));
         btn.setContentAreaFilled(false);
         btn.setFocusPainted(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -752,7 +739,7 @@ tree.setFont(new Font("SansSerif", Font.PLAIN, 17));
 
     private void openSettings() {
         new SettingsDialog(this, settings, () -> {
-            Theme.loadColors(settings.isDarkMode());
+            Theme.loadColors();
             SwingUtilities.updateComponentTreeUI(this);
             refreshAll();
         }).setVisible(true);

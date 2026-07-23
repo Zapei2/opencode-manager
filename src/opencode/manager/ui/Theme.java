@@ -1,7 +1,8 @@
 package opencode.manager.ui;
 
-import com.formdev.flatlaf.FlatDarkLaf;
-import com.formdev.flatlaf.FlatLightLaf;
+import com.formdev.flatlaf.FlatLaf;
+import com.formdev.flatlaf.intellijthemes.FlatArcDarkOrangeIJTheme;
+import com.formdev.flatlaf.intellijthemes.FlatArcIJTheme;
 import javax.swing.*;
 import java.awt.*;
 
@@ -19,38 +20,50 @@ public class Theme {
 
     public static void applyFlatLaf(boolean dark) {
         if (dark) {
-            FlatDarkLaf.setup();
-            UIManager.put("Table.alternateRowColor", new Color(0x1a1a2e));
+            FlatArcDarkOrangeIJTheme.setup();
         } else {
-            FlatLightLaf.setup();
-            UIManager.put("Table.alternateRowColor", new Color(0xf8fafc));
+            FlatArcIJTheme.setup();
         }
-        loadColors(dark);
+        patchUIManager();
+        loadColors();
     }
 
-    public static void loadColors(boolean dark) {
-        if (dark) {
-            BG = new Color(0x1e1e2e);
-            SIDEBAR_BG = new Color(0x181825);
-            ACCENT = new Color(0x89b4fa);
-            TEXT_PRIMARY = new Color(0xcdd6f4);
-            TEXT_SECONDARY = new Color(0x9399b2);
-            BORDER = new Color(0x313244);
-            ROW_ALT = new Color(0x1e1e2e);
-            SELECT_BG = new Color(0x2a2a3e);
-            TABLE_BG = new Color(0x1e1e2e);
-            CARD_BG = new Color(0x181825);
-        } else {
-            BG = new Color(0xf8fafc);
-            SIDEBAR_BG = Color.WHITE;
-            ACCENT = new Color(99, 102, 241);
-            TEXT_PRIMARY = new Color(30, 41, 59);
-            TEXT_SECONDARY = new Color(100, 116, 139);
-            BORDER = new Color(226, 232, 240);
-            ROW_ALT = new Color(0xf8fafc);
-            SELECT_BG = new Color(238, 242, 255);
-            TABLE_BG = Color.WHITE;
-            CARD_BG = Color.WHITE;
-        }
+    private static void patchUIManager() {
+        UIManager.put("Button.arc", 12);
+        UIManager.put("Button.margin", new Insets(6, 18, 6, 18));
+        UIManager.put("Button.font", new Font("SansSerif", Font.PLAIN, 14));
+        UIManager.put("Component.arrowType", "chevron");
+        UIManager.put("Table.rowHeight", 40);
+        UIManager.put("Table.showHorizontalLines", false);
+        UIManager.put("Table.showVerticalLines", false);
+        UIManager.put("Table.intercellSpacing", new Dimension(0, 0));
+        UIManager.put("TableHeader.font", new Font("SansSerif", Font.BOLD, 13));
+        UIManager.put("TableHeader.height", 34);
+        UIManager.put("Tree.rowHeight", 34);
+        UIManager.put("Tree.font", new Font("SansSerif", Font.PLAIN, 16));
+        UIManager.put("ScrollBar.width", 10);
+        UIManager.put("ScrollBar.thumbArc", 12);
+        UIManager.put("ScrollBar.thumbInsets", new Insets(2, 2, 2, 2));
+        UIManager.put("TabbedPane.tabHeight", 36);
+        UIManager.put("SplitPaneDivider.style", "grip");
+        UIManager.put("OptionPane.messageFont", new Font("SansSerif", Font.PLAIN, 14));
+        UIManager.put("OptionPane.buttonFont", new Font("SansSerif", Font.PLAIN, 14));
+        UIManager.put("ScrollPane.smoothScrolling", true);
+        UIManager.put("Tree.paintLines", false);
+        UIManager.put("Table.selectionInsets", new Insets(2, 0, 2, 0));
+    }
+
+    public static void loadColors() {
+        BG = UIManager.getColor("Panel.background");
+        SIDEBAR_BG = UIManager.getColor("Panel.background");
+        ACCENT = UIManager.getColor("Component.accentColor");
+        TEXT_PRIMARY = UIManager.getColor("Label.foreground");
+        TEXT_SECONDARY = UIManager.getColor("Label.disabledForeground");
+        BORDER = UIManager.getColor("Component.borderColor");
+        TABLE_BG = UIManager.getColor("Table.background");
+        SELECT_BG = UIManager.getColor("Table.selectionBackground");
+        CARD_BG = UIManager.getColor("TextArea.background");
+        ROW_ALT = UIManager.getColor("Table.alternateRowColor");
+        if (ROW_ALT == null) ROW_ALT = TABLE_BG;
     }
 }
