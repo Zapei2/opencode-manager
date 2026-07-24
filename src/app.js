@@ -49,6 +49,8 @@ function t(key) { return translations[lang][key] || key; }
 function setLanguage(newLang) {
   lang = newLang; localStorage.setItem(LANG_KEY, newLang);
   document.title = t('title'); updateUIStrings();
+  // Re-render tree with new language
+  renderTree();
 }
 
 function updateUIStrings() {
