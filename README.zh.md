@@ -2,7 +2,7 @@
 
 OpenCode 的桌面伴侣工具，让会话管理变得直观高效。
 
-> **前置要求**：使用前请先安装 [OpenCode](https://github.com/anomalyco/opencode)。本工具读取 OpenCode 的本地数据库，并通过 `opencode -s <id>` 恢复会话。
+> **前置要求**：使用前请先安装 [OpenCode](https://opencode.ai)。本工具读取 OpenCode 的本地数据库，并通过 `opencode -s <id>` 恢复会话。
 
 > 🇬🇧 [English](README.md)
 
@@ -23,7 +23,7 @@ OpenCode Manager 提供一个纯正的桌面界面，让你可以：
 
 ## 前置要求
 
-请先安装 [OpenCode](https://github.com/anomalyco/opencode)：
+请先安装 [OpenCode](https://opencode.ai)：
 
 ```bash
 # macOS / Linux
