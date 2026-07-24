@@ -175,7 +175,7 @@ function renderTable() {
       if (e.buttons !== 1 || dragStartIdx === null) return;
       clearSelection(); selectRange(dragStartIdx, idx);
     });
-    row.addEventListener('dblclick', () => renameSelected());
+    row.addEventListener('dblclick', () => openInTerminalSelected());
     row.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       if (!selectedIds.has(s.id)) { clearSelection(); selectOne(s.id); }
