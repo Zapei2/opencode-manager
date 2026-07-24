@@ -85,7 +85,7 @@ impl Database {
         let mut stmt = conn.prepare(
             "SELECT project_id, slug, directory, title, version, cost,
                     tokens_input, tokens_output, tokens_reasoning, tokens_cache_read, tokens_cache_write,
-                    agent, model, time_created, time_archived
+                    agent, model
              FROM session WHERE id = ?"
         ).map_err(|e| e.to_string())?;
 
@@ -108,14 +108,14 @@ impl Database {
         }).map_err(|e| e.to_string())?;
 
         let now = chrono::Utc::now().timestamp_millis();
-        let title = format!("{} (副本)", &row.3);
+        let title = format!("{} (fork)", &row.3);
 
         conn.execute(
-            "INSERT INTO session (id, project_id, slug, directory, title, version,
+            "INSERT INTO session (id, project_id, parent_id, slug, directory, title, version,
              cost, tokens_input, tokens_output, tokens_reasoning, tokens_cache_read, tokens_cache_write,
              agent, model, time_created, time_updated)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            params![new_id, row.0, row.1, row.2, title, row.4,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            params![new_id, row.0, id, row.1, row.2, title, row.4,
                     row.5, row.6, row.7, row.8, row.9, row.10,
                     row.11, row.12, now, now]
         ).map_err(|e| e.to_string())?;

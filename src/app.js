@@ -97,10 +97,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function refreshAll() {
   const showArchived = document.getElementById('showArchived').checked;
   try {
-    allSessions = await invoke('list_sessions', { showArchived, dirPrefix: dirPrefix === '' ? null : dirPrefix });
-    const q = document.getElementById('search').value.toLowerCase();
-    filteredSessions = q ? allSessions.filter(s => s.title.toLowerCase().includes(q) || s.directory.toLowerCase().includes(q)) : allSessions;
-    renderTree(); renderTable(); updateStatus();
+    allSessions = await invoke('list_sessions', { showArchived, dirPrefix: null });
+    if (dirPrefix !== null && !allSessions.some(s => s.directory === dirPrefix)) {
+      dirPrefix = null;
+    }
+    applyFilter();
+    renderTree();
   } catch (e) { alert(t('loadFailed') + ': ' + e); }
 }
 
@@ -116,6 +118,12 @@ async function renderTree() {
     nodes.forEach(n => container.appendChild(renderDirNode(n)));
     const count = allSessions.length;
     rootNode.innerHTML = `📁  ${t('allSessions')}${count ? '  <span class="tree-count">' + count + '</span>' : ''}`;
+    if (dirPrefix === null) {
+      rootNode.classList.add('selected');
+    } else {
+      const node = tree.querySelector(`.tree-node[data-prefix="${dirPrefix}"]`);
+      if (node) node.classList.add('selected');
+    }
   } catch (e) { console.error('Tree error:', e); }
 }
 
@@ -324,9 +332,10 @@ function showConfirm(msg, withBackup) {
     body.innerHTML = `<div style="font-size:14px;line-height:1.6;white-space:pre-wrap">${escapeHtml(msg)}</div>`;
     if (withBackup) body.innerHTML += `<label style="display:flex;align-items:center;gap:6px;margin-top:12px;font-size:13px"><input type="checkbox" id="backup-check" checked /> ${t('backupBefore')}</label>`;
     document.getElementById('dialog-title').textContent = t('confirm');
-    document.getElementById('dialog-buttons').innerHTML = `<button onclick="closeDialog()">${t('cancel')}</button><button class="primary" id="confirm-ok">${t('confirmDel')}</button>`;
+    document.getElementById('dialog-buttons').innerHTML = `<button id="confirm-cancel">${t('cancel')}</button><button class="primary" id="confirm-ok">${t('confirmDel')}</button>`;
     document.getElementById('dialog-overlay').classList.remove('hidden');
     document.getElementById('confirm-ok').onclick = () => { closeDialog(); resolve(true); };
+    document.getElementById('confirm-cancel').onclick = () => { closeDialog(); resolve(false); };
   });
 }
 
