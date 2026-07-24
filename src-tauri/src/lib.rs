@@ -143,6 +143,44 @@ fn backup_database(state: State<Mutex<AppState>>) -> Result<String, String> {
     app.db.backup_database()
 }
 
+#[tauri::command]
+fn open_in_terminal(directory: String, terminal: String) -> Result<(), String> {
+    let dir = if directory.is_empty() {
+        dirs_next::home_dir().ok_or("Cannot find home dir")?.to_string_lossy().to_string()
+    } else {
+        directory
+    };
+
+    let mut cmd = if cfg!(target_os = "windows") {
+        let term = if terminal.is_empty() { "powershell.exe".to_string() } else { terminal };
+        let mut c = std::process::Command::new(&term);
+        c.current_dir(&dir).arg("-NoExit").arg("-Command").arg("Set-Location").arg(&dir);
+        c
+    } else {
+        // Linux: detect available terminal
+        let term = if !terminal.is_empty() {
+            terminal.clone()
+        } else if std::process::Command::new("which").arg("kitty").output().map(|o| o.status.success()).unwrap_or(false) {
+            "kitty".to_string()
+        } else if std::process::Command::new("which").arg("konsole").output().map(|o| o.status.success()).unwrap_or(false) {
+            "konsole".to_string()
+        } else if std::process::Command::new("which").arg("gnome-terminal").output().map(|o| o.status.success()).unwrap_or(false) {
+            "gnome-terminal".to_string()
+        } else {
+            "xterm".to_string()
+        };
+        let mut c = std::process::Command::new(&term);
+        c.current_dir(&dir);
+        if term.contains("kitty") { c.arg("--directory").arg(&dir); }
+        else if term.contains("konsole") { c.arg("--workdir").arg(&dir); }
+        else if term.contains("gnome-terminal") { c.arg("--working-directory").arg(&dir); }
+        c
+    };
+
+    cmd.spawn().map_err(|e| format!("Failed to launch terminal: {}", e))?;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let database = Database::open().expect("Failed to open database");
@@ -159,6 +197,7 @@ pub fn run() {
             archive_session,
             delete_session,
             backup_database,
+            open_in_terminal,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -13,9 +13,10 @@ const translations = {
     newTitle: '新标题:', newDir: '新目录路径:',
     confirmDelete: '确定要永久删除以下', sessionsConfirm: '个会话吗？', cannotUndo: '此操作不可撤销！',
     backupBefore: '删除前备份数据库', confirm: '确认', cancel: '取消', confirmDel: '确认删除',
-    info: '信息', close: '关闭', copyId: '复制会话 ID', detail: '查看详情',
+    info: '信息', close: '关闭',     copyId: '复制会话 ID', detail: '查看详情', openTerminal: '在终端中打开',
     themeTitle: '外观主题', light: '浅色', dark: '深色', shortcutsTitle: '快捷键',
     langLabel: '界面语言', langEn: 'English', langZh: '中文',
+    terminalLabel: '终端程序', terminalPlaceholder: '例如: kitty / konsole',
     copied: '已复制会话 ID: ', backupDone: '数据库已备份到:',
     loadFailed: '加载数据失败', renameFailed: '重命名失败', pasteFailed: '粘贴失败',
     moveFailed: '移动失败', archiveFailed: '归档失败', deleteFailed: '删除失败', backupFailed: '备份失败',
@@ -32,9 +33,10 @@ const translations = {
     newTitle: 'New title:', newDir: 'New directory path:',
     confirmDelete: 'Permanently delete', sessionsConfirm: 'sessions?', cannotUndo: 'This cannot be undone!',
     backupBefore: 'Backup database before deleting', confirm: 'Confirm', cancel: 'Cancel', confirmDel: 'Confirm Delete',
-    info: 'Info', close: 'Close', copyId: 'Copy Session ID', detail: 'View Details',
+    info: 'Info', close: 'Close',     copyId: 'Copy Session ID', detail: 'View Details', openTerminal: 'Open in Terminal',
     themeTitle: 'Theme', light: 'Light', dark: 'Dark', shortcutsTitle: 'Keyboard Shortcuts',
     langLabel: 'Language', langEn: 'English', langZh: '中文',
+    terminalLabel: 'Terminal', terminalPlaceholder: 'e.g. kitty / powershell.exe',
     copied: 'Copied session ID: ', backupDone: 'Database backed up to:',
     loadFailed: 'Failed to load data', renameFailed: 'Rename failed', pasteFailed: 'Paste failed',
     moveFailed: 'Move failed', archiveFailed: 'Archive failed', deleteFailed: 'Delete failed', backupFailed: 'Backup failed',
@@ -76,6 +78,7 @@ function updateUIStrings() {
   document.querySelectorAll('.menu-item[data-action="delete"]').forEach(b => b.textContent = t('del'));
   document.querySelectorAll('.menu-item[data-action="copyId"]').forEach(b => b.textContent = t('copyId'));
   document.querySelectorAll('.menu-item[data-action="detail"]').forEach(b => b.textContent = t('detail'));
+  document.querySelectorAll('.menu-item[data-action="openTerminal"]').forEach(b => b.textContent = t('openTerminal'));
   const h = { 'th-title': 'hTitle', 'th-dir': 'hDir', 'th-msg': 'hMsg', 'th-tokens': 'hTokens', 'th-agent': 'hAgent', 'th-provider': 'hProvider', 'th-model': 'hModel', 'th-time': 'hTime' };
   Object.entries(h).forEach(([cls, key]) => document.querySelectorAll('.' + cls).forEach(el => el.textContent = t(key)));
   updateStatus();
@@ -272,6 +275,16 @@ function showDetailSelected() {
   showInfo(`ID: ${x.id}\nTitle: ${x.title}\nSlug: ${x.slug}\nDirectory: ${x.directory}\nMessages: ${x.message_count}\nCreated: ${x.time_created}\nUpdated: ${x.time_updated}\nTokens: ${formatTokens((x.tokens_input || 0) + (x.tokens_output || 0))}\nAgent: ${x.agent || '-'}\nModel: ${x.model || '-'}`);
 }
 
+async function openInTerminalSelected() {
+  const s = getSelectedSessions();
+  if (s.length !== 1) return;
+  const dir = s[0].directory || '';
+  const term = localStorage.getItem('opencode_manager_terminal') || '';
+  try {
+    await invoke('open_in_terminal', { directory: dir, terminal: term });
+  } catch (e) { showError('Open terminal failed', e); }
+}
+
 function showContextMenu(e, session) {
   const menu = document.getElementById('context-menu');
   menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
@@ -329,6 +342,9 @@ function openSettings() {
       <label style="margin-right:20px"><input type="radio" name="lang" value="en" ${lang === 'en' ? 'checked' : ''} /> ${t('langEn')}</label>
       <label><input type="radio" name="lang" value="zh" ${lang === 'zh' ? 'checked' : ''} /> ${t('langZh')}</label>
     </div>
+    <div class="settings-section"><div class="settings-title">${t('terminalLabel')}</div>
+      <input type="text" id="terminal-input" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:var(--font-sans);outline:none;margin-top:6px" placeholder="${t('terminalPlaceholder')}" value="${localStorage.getItem('opencode_manager_terminal') || ''}" />
+    </div>
     <div class="settings-section"><div class="settings-title">${t('shortcutsTitle')}</div>
       <div class="shortcut-row"><span class="shortcut-key">Ctrl+A</span><span class="shortcut-desc">${t('selectAll')}</span></div>
       <div class="shortcut-row"><span class="shortcut-key">Ctrl+Shift+C</span><span class="shortcut-desc">${t('copy')}</span></div>
@@ -342,8 +358,13 @@ function openSettings() {
       <div class="shortcut-row"><span class="shortcut-key">Delete</span><span class="shortcut-desc">${t('del')}</span></div>
     </div>`;
   document.getElementById('dialog-title').textContent = t('settings');
-  document.getElementById('dialog-buttons').innerHTML = `<button onclick="closeDialog()" class="primary">${t('close')}</button>`;
+  document.getElementById('dialog-buttons').innerHTML = `<button id="settings-close-btn" class="primary">${t('close')}</button>`;
   document.getElementById('dialog-overlay').classList.remove('hidden');
+  document.getElementById('settings-close-btn').onclick = () => {
+    const input = document.getElementById('terminal-input');
+    if (input) localStorage.setItem('opencode_manager_terminal', input.value.trim());
+    closeDialog();
+  };
   document.querySelectorAll('input[name="theme"]').forEach(r => {
     r.addEventListener('change', () => { document.body.classList.toggle('dark', r.value === 'dark'); localStorage.setItem('opencode_manager_theme', r.value); });
   });
@@ -391,7 +412,7 @@ function setupEventListeners() {
     const item = e.target.closest('.menu-item');
     if (!item) return;
     document.getElementById('context-menu').classList.add('hidden');
-    const m = { rename: renameSelected, copy: copySelected, paste: pasteSelected, move: moveSelected, archive: archiveSelected, delete: deleteSelected, copyId: copyIdSelected, detail: showDetailSelected };
+    const m = { rename: renameSelected, copy: copySelected, paste: pasteSelected, move: moveSelected, archive: archiveSelected, delete: deleteSelected, copyId: copyIdSelected, detail: showDetailSelected, openTerminal: openInTerminalSelected };
     if (m[item.dataset.action]) m[item.dataset.action]();
   });
 }
