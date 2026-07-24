@@ -4,7 +4,7 @@ A desktop companion for [OpenCode](https://opencode.ai) that makes session manag
 
 > **Prerequisite**: [OpenCode](https://opencode.ai) must be installed on your system. This tool reads OpenCode's local database and uses `opencode -s <id>` to resume sessions.
 
-> 🇨🇳 [中文版](README.zh.md)
+> 🇨🇳 [中文](README.zh.md)
 
 ---
 
