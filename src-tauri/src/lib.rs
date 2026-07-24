@@ -144,17 +144,18 @@ fn backup_database(state: State<Mutex<AppState>>) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn open_in_terminal(directory: String, terminal: String) -> Result<(), String> {
+fn open_in_terminal(directory: String, terminal: String, slug: String) -> Result<(), String> {
     let dir = if directory.is_empty() {
         dirs_next::home_dir().ok_or("Cannot find home dir")?.to_string_lossy().to_string()
     } else {
         directory
     };
+    let cmd_str = format!("opencode-s {}", slug);
 
     let mut cmd = if cfg!(target_os = "windows") {
         let term = if terminal.is_empty() { "powershell.exe".to_string() } else { terminal };
         let mut c = std::process::Command::new(&term);
-        c.current_dir(&dir).arg("-NoExit").arg("-Command").arg("Set-Location").arg(&dir);
+        c.current_dir(&dir).arg("-NoExit").arg("-Command").arg(&cmd_str);
         c
     } else {
         // Linux: detect available terminal
@@ -171,9 +172,10 @@ fn open_in_terminal(directory: String, terminal: String) -> Result<(), String> {
         };
         let mut c = std::process::Command::new(&term);
         c.current_dir(&dir);
-        if term.contains("kitty") { c.arg("--directory").arg(&dir); }
-        else if term.contains("konsole") { c.arg("--workdir").arg(&dir); }
-        else if term.contains("gnome-terminal") { c.arg("--working-directory").arg(&dir); }
+        if term.contains("kitty") { c.arg("--directory").arg(&dir).arg("-e").arg("sh").arg("-c").arg(&cmd_str); }
+        else if term.contains("konsole") { c.arg("--workdir").arg(&dir).arg("-e").arg("sh").arg("-c").arg(&cmd_str); }
+        else if term.contains("gnome-terminal") { c.arg("--working-directory").arg(&dir).arg("--").arg("sh").arg("-c").arg(&cmd_str); }
+        else { c.arg("-e").arg("sh").arg("-c").arg(&cmd_str); }
         c
     };
 
