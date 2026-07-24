@@ -144,13 +144,13 @@ fn backup_database(state: State<Mutex<AppState>>) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn open_in_terminal(directory: String, terminal: String, slug: String) -> Result<(), String> {
+fn open_in_terminal(directory: String, terminal: String, session_id: String) -> Result<(), String> {
     let dir = if directory.is_empty() {
         dirs_next::home_dir().ok_or("Cannot find home dir")?.to_string_lossy().to_string()
     } else {
         directory
     };
-    let cmd_str = format!("opencode-s {}", slug);
+    let cmd_str = format!("opencode -s {}", session_id);
 
     let mut cmd = if cfg!(target_os = "windows") {
         let term = if terminal.is_empty() { "powershell.exe".to_string() } else { terminal };
@@ -158,7 +158,6 @@ fn open_in_terminal(directory: String, terminal: String, slug: String) -> Result
         c.current_dir(&dir).arg("-NoExit").arg("-Command").arg(&cmd_str);
         c
     } else {
-        // Linux: detect available terminal
         let term = if !terminal.is_empty() {
             terminal.clone()
         } else if std::process::Command::new("which").arg("kitty").output().map(|o| o.status.success()).unwrap_or(false) {

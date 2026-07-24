@@ -279,10 +279,10 @@ async function openInTerminalSelected() {
   const s = getSelectedSessions();
   if (s.length !== 1) return;
   const dir = s[0].directory || '';
-  const slug = s[0].slug;
+  const sessionId = s[0].id;
   const term = localStorage.getItem('opencode_manager_terminal') || '';
   try {
-    await invoke('open_in_terminal', { directory: dir, terminal: term, slug });
+    await invoke('open_in_terminal', { directory: dir, terminal: term, sessionId });
   } catch (e) { showError('Open terminal failed', e); }
 }
 
