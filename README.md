@@ -2,6 +2,8 @@
 
 A desktop companion for [OpenCode](https://github.com/anomalyco/opencode) that makes session management visual and efficient.
 
+> **Prerequisite**: [OpenCode](https://github.com/anomalyco/opencode) must be installed on your system. This tool reads OpenCode's local database and uses `opencode -s <id>` to resume sessions.
+
 > 🇨🇳 [中文版](README.zh.md)
 
 ---
@@ -18,6 +20,20 @@ OpenCode Manager gives you a proper desktop interface to:
 - **Clean up with confidence** — archive old sessions instead of losing them; backup before deletion
 
 It reads your local OpenCode database directly. No server, no sync, no configuration.
+
+## Prerequisites
+
+[OpenCode](https://github.com/anomalyco/opencode) is required. Install it:
+
+```bash
+# macOS / Linux (via pipx)
+pipx install opencode
+
+# Or via pip
+pip install opencode
+```
+
+After installation, run `opencode --help` to verify.
 
 ## Download
 

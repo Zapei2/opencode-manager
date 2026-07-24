@@ -2,6 +2,8 @@
 
 OpenCode 的桌面伴侣工具，让会话管理变得直观高效。
 
+> **前置要求**：使用前请先安装 [OpenCode](https://github.com/anomalyco/opencode)。本工具读取 OpenCode 的本地数据库，并通过 `opencode -s <id>` 恢复会话。
+
 > 🇬🇧 [English](README.md)
 
 ---
@@ -18,6 +20,20 @@ OpenCode Manager 提供一个纯正的桌面界面，让你可以：
 - **放心清理** — 归档旧会话而不是直接丢失，删除前自动备份数据库
 
 它直接读取本机 OpenCode 的 SQLite 数据库。无需服务器、无需同步、无需配置。
+
+## 前置要求
+
+请先安装 [OpenCode](https://github.com/anomalyco/opencode)：
+
+```bash
+# macOS / Linux
+pipx install opencode
+
+# 或用 pip
+pip install opencode
+```
+
+安装后运行 `opencode --help` 确认。
 
 ## 下载
 
