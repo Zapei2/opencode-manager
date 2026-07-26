@@ -1,4 +1,5 @@
 use rusqlite::{Connection, params};
+use std::collections::HashSet;
 use std::path::Path;
 use std::sync::Mutex;
 use chrono::Local;
@@ -7,6 +8,7 @@ use crate::models::*;
 
 pub struct Database {
     conn: Mutex<Connection>,
+    columns: HashSet<String>,
 }
 
 impl Database {
@@ -51,17 +53,45 @@ impl Database {
         let conn = Connection::open(path).map_err(|e| e.to_string())?;
         conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA busy_timeout=8000; PRAGMA foreign_keys=ON;")
             .map_err(|e| e.to_string())?;
-        Ok(Database { conn: Mutex::new(conn) })
+
+        // Detect available columns in session table (schemas differ across opencode versions)
+        let mut columns = HashSet::new();
+        let col_names: Vec<String> = conn
+            .prepare("PRAGMA table_info(session)")
+            .map_err(|e| e.to_string())?
+            .query_map([], |row| row.get::<_, String>(1))
+            .map_err(|e| e.to_string())?
+            .filter_map(|r| r.ok())
+            .collect();
+        for c in col_names {
+            columns.insert(c);
+        }
+
+        Ok(Database { conn: Mutex::new(conn), columns })
+    }
+
+    fn has(&self, col: &str) -> bool {
+        self.columns.contains(col)
     }
 
     pub fn list_sessions(&self) -> Result<Vec<SessionSummary>, String> {
         let conn = self.conn.lock().map_err(|e| e.to_string())?;
-        let mut stmt = conn.prepare(
-            "SELECT s.id, s.title, s.slug, s.directory, s.agent, s.model, s.cost,
-                    s.tokens_input, s.tokens_output, s.time_created, s.time_updated, s.time_archived,
+
+        // Build query dynamically — older opencode databases lack agent/model/cost/tokens columns
+        let agent = if self.has("agent") { "s.agent" } else { "NULL" };
+        let model = if self.has("model") { "s.model" } else { "NULL" };
+        let cost = if self.has("cost") { "s.cost" } else { "0" };
+        let ti = if self.has("tokens_input") { "s.tokens_input" } else { "0" };
+        let to = if self.has("tokens_output") { "s.tokens_output" } else { "0" };
+
+        let sql = format!(
+            "SELECT s.id, s.title, s.slug, s.directory, {agent}, {model}, {cost},
+                    {ti}, {to}, s.time_created, s.time_updated, s.time_archived,
                     (SELECT COUNT(*) FROM message m WHERE m.session_id = s.id) AS msg_count
              FROM session s ORDER BY s.time_updated DESC"
-        ).map_err(|e| e.to_string())?;
+        );
+
+        let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
 
         let sessions = stmt.query_map([], |row| {
             let tc: i64 = row.get(9)?;
@@ -105,44 +135,49 @@ impl Database {
         let conn = self.conn.lock().map_err(|e| e.to_string())?;
         let new_id = generate_id("ses_");
 
-        // Read original session
-        let mut stmt = conn.prepare(
-            "SELECT project_id, slug, directory, title, version, cost,
-                    tokens_input, tokens_output, tokens_reasoning, tokens_cache_read, tokens_cache_write,
-                    agent, model
-             FROM session WHERE id = ?"
-        ).map_err(|e| e.to_string())?;
+        // Build column lists dynamically - older opencode DBs lack cost/tokens/agent/model columns
+        let base_cols = ["project_id", "slug", "directory", "title", "version"];
+        let extra_cols: Vec<&str> = ["cost", "tokens_input", "tokens_output", "tokens_reasoning",
+                                     "tokens_cache_read", "tokens_cache_write", "agent", "model"]
+            .iter().copied().filter(|c| self.has(c)).collect();
+        let all_cols: Vec<&str> = base_cols.iter().copied().chain(extra_cols.iter().copied()).collect();
 
-        let row = stmt.query_row(params![id], |row| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
-                row.get::<_, String>(3)?,
-                row.get::<_, String>(4)?,
-                row.get::<_, f64>(5)?,
-                row.get::<_, i64>(6)?,
-                row.get::<_, i64>(7)?,
-                row.get::<_, i64>(8)?,
-                row.get::<_, i64>(9)?,
-                row.get::<_, i64>(10)?,
-                row.get::<_, Option<String>>(11)?,
-                row.get::<_, Option<String>>(12)?,
-            ))
+        // SELECT existing values
+        let sel_list = all_cols.join(", ");
+        let sel_sql = format!("SELECT {} FROM session WHERE id = ?", sel_list);
+        let mut stmt = conn.prepare(&sel_sql).map_err(|e| e.to_string())?;
+        let row_vals: Vec<rusqlite::types::Value> = stmt.query_row(params![id], |row| {
+            (0..all_cols.len()).map(|i| row.get::<_, rusqlite::types::Value>(i)).collect()
         }).map_err(|e| e.to_string())?;
 
         let now = chrono::Utc::now().timestamp_millis();
-        let title = format!("{} (fork)", &row.3);
+        let title = match &row_vals[3] {
+            rusqlite::types::Value::Text(t) => format!("{} (fork)", t),
+            _ => "fork".to_string(),
+        };
 
-        conn.execute(
-            "INSERT INTO session (id, project_id, parent_id, slug, directory, title, version,
-             cost, tokens_input, tokens_output, tokens_reasoning, tokens_cache_read, tokens_cache_write,
-             agent, model, time_created, time_updated)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            params![new_id, row.0, id, row.1, row.2, title, row.4,
-                    row.5, row.6, row.7, row.8, row.9, row.10,
-                    row.11, row.12, now, now]
-        ).map_err(|e| e.to_string())?;
+        // Build INSERT: id, <all_cols>, parent_id, time_created, time_updated
+        let ins_cols_str = all_cols.join(", ");
+        let ph_count = 1 + all_cols.len() + 3; // new_id + cols + parent_id + created + updated
+        let placeholders: Vec<String> = (0..ph_count).map(|_| "?".to_string()).collect();
+        let ins_sql = format!(
+            "INSERT INTO session (id, {}, parent_id, time_created, time_updated) VALUES ({})",
+            ins_cols_str, placeholders.join(", ")
+        );
+
+        // Build params vector
+        let mut params_vec: Vec<rusqlite::types::Value> = Vec::new();
+        params_vec.push(rusqlite::types::Value::Text(new_id.clone()));
+        for v in &row_vals {
+            params_vec.push(v.clone());
+        }
+        params_vec[4] = rusqlite::types::Value::Text(title); // override title
+        params_vec.push(rusqlite::types::Value::Text(id.to_string())); // parent_id
+        params_vec.push(rusqlite::types::Value::Integer(now)); // time_created
+        params_vec.push(rusqlite::types::Value::Integer(now)); // time_updated
+
+        let params_refs: Vec<&dyn rusqlite::ToSql> = params_vec.iter().map(|v| v as &dyn rusqlite::ToSql).collect();
+        conn.execute(&ins_sql, params_refs.as_slice()).map_err(|e| e.to_string())?;
 
         // Copy messages
         Self::copy_messages(&conn, id, &new_id, now)?;
