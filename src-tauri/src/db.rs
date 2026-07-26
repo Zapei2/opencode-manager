@@ -12,15 +12,39 @@ pub struct Database {
 impl Database {
     pub fn open() -> Result<Self, String> {
         let home = dirs_next::home_dir().ok_or("Cannot find home dir")?;
-        let db_path = home.join(".local/share/opencode/opencode.db");
-        if !db_path.exists() {
-            let alt = home.join(".local/share/opencode/opencode-master.db");
-            if alt.exists() {
-                return Self::open_path(&alt);
+        let data_dir = home.join(".local/share/opencode");
+
+        // Try to get the actual database path from opencode itself.
+        // opencode picks the DB file based on installation channel
+        // (e.g. "master" -> opencode-master.db), so we must ask it
+        // rather than hardcoding "opencode.db".
+        if let Ok(output) = std::process::Command::new("opencode")
+            .arg("db")
+            .arg("path")
+            .env_remove("OPENCODE_DISABLE_CHANNEL_DB")
+            .output()
+        {
+            if output.status.success() {
+                let path_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !path_str.is_empty() {
+                    let p = std::path::Path::new(&path_str);
+                    if p.exists() {
+                        return Self::open_path(p);
+                    }
+                }
             }
-            return Err(format!("Database not found: {}", db_path.display()));
         }
-        Self::open_path(&db_path)
+
+        // Fallback: try opencode.db, then opencode-master.db
+        let db_path = data_dir.join("opencode.db");
+        if db_path.exists() {
+            return Self::open_path(&db_path);
+        }
+        let alt = data_dir.join("opencode-master.db");
+        if alt.exists() {
+            return Self::open_path(&alt);
+        }
+        Err(format!("Database not found in {}", data_dir.display()))
     }
 
     fn open_path(path: &Path) -> Result<Self, String> {
@@ -204,11 +228,42 @@ impl Database {
 
     pub fn backup_database(&self) -> Result<String, String> {
         let home = dirs_next::home_dir().ok_or("Cannot find home dir")?;
-        let db_path = home.join(".local/share/opencode/opencode.db");
+        let data_dir = home.join(".local/share/opencode");
+
+        // Determine the actual DB path (same logic as open())
+        let db_path = Self::current_db_path(&data_dir)?;
         let ts = chrono::Utc::now().timestamp_millis();
         let backup = db_path.with_file_name(format!("opencode.db.backup.{}", ts));
         std::fs::copy(&db_path, &backup).map_err(|e| e.to_string())?;
         Ok(backup.to_string_lossy().to_string())
+    }
+
+    fn current_db_path(data_dir: &Path) -> Result<std::path::PathBuf, String> {
+        if let Ok(output) = std::process::Command::new("opencode")
+            .arg("db")
+            .arg("path")
+            .env_remove("OPENCODE_DISABLE_CHANNEL_DB")
+            .output()
+        {
+            if output.status.success() {
+                let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !s.is_empty() {
+                    let p = std::path::Path::new(&s);
+                    if p.exists() {
+                        return Ok(p.to_path_buf());
+                    }
+                }
+            }
+        }
+        let db_path = data_dir.join("opencode.db");
+        if db_path.exists() {
+            return Ok(db_path);
+        }
+        let alt = data_dir.join("opencode-master.db");
+        if alt.exists() {
+            return Ok(alt);
+        }
+        Err(format!("Database not found in {}", data_dir.display()))
     }
 }
 
