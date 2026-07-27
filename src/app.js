@@ -323,11 +323,13 @@ async function openInTerminalSelected() {
   terminalTabs.forEach((info) => { info.el.style.display = 'none'; });
 
   const isDark = document.body.classList.contains('dark');
+  const baseFontSize = 14;
   const term = new Terminal({
-    fontSize: 14,
-    fontFamily: 'monospace',
+    fontSize: baseFontSize,
+    fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Source Code Pro', monospace",
     cursorBlink: true,
     scrollback: 10000,
+    lineHeight: 1.2,
     theme: isDark
       ? { background: '#1e1e2e', foreground: '#cdd6f4', cursor: '#cdd6f4', selectionBackground: '#2a2a3e' }
       : { background: '#ffffff', foreground: '#1e293b', cursor: '#1e293b', selectionBackground: '#eef2ff' },
@@ -361,7 +363,6 @@ async function openInTerminalSelected() {
   try {
     await setupPtyListeners();
     await invoke('pty_spawn', { tabId, program: 'opencode', args: ['-s', sessionId], cwd: dir || null, cols, rows });
-    term.writeln('\x1b[32mpty_spawn OK\x1b[0m\r');
   } catch (e) {
     term.writeln(`\r\n\x1b[31mError: ${e}\x1b[0m`);
   }
@@ -469,13 +470,17 @@ document.getElementById('terminal-close-all-btn').addEventListener('click', () =
   hideTerminalView();
 });
 
-// Resize handling
+// Resize handling - scale font with window size and fit terminal
 let resizeTimer = null;
 window.addEventListener('resize', () => {
   if (resizeTimer) clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
+    // Scale font size based on window dimensions
+    const scaleFactor = Math.min(window.innerWidth / 1320, window.innerHeight / 800);
+    const scaledFontSize = Math.max(10, Math.round(14 * scaleFactor));
     const info = terminalTabs.get(activeTabId);
     if (info) {
+      info.term.options.fontSize = scaledFontSize;
       info.fitAddon.fit();
       invoke('pty_resize', { tabId: activeTabId, cols: info.term.cols, rows: info.term.rows });
     }
