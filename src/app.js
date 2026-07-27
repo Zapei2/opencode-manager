@@ -346,10 +346,11 @@ async function openInTerminalSelected() {
   term.writeln('\x1b[90mStarting opencode...\x1b[0m\r');
 
   try {
+    await setupPtyListeners();
     await invoke('pty_spawn', { tabId, program: 'opencode', args: ['-s', sessionId], cwd: dir || null, cols, rows });
     term.writeln('\x1b[32mpty_spawn OK\x1b[0m\r');
   } catch (e) {
-    term.writeln(`\r\n\x1b[31mSpawn error: ${e}\x1b[0m`);
+    term.writeln(`\r\n\x1b[31mError: ${e}\x1b[0m`);
   }
 }
 
@@ -414,25 +415,33 @@ function escapeHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-// PTY data event listener
+// PTY event listeners - set up with error handling
 let ptyListenersReady = false;
-function setupPtyListeners() {
+async function setupPtyListeners() {
   if (ptyListenersReady) return;
   ptyListenersReady = true;
-  listen('pty-data', (event) => {
-    const [tabId, data] = event.payload;
-    const info = terminalTabs.get(tabId);
-    if (info) {
-      info.term.write(data);
-    }
-  });
-  listen('pty-exit', (event) => {
-    const tabId = event.payload;
-    const info = terminalTabs.get(tabId);
-    if (info) {
-      info.term.writeln('\r\n\x1b[90m[process exited]\x1b[0m');
-    }
-  });
+  try {
+    const unlisten1 = await listen('pty-data', (event) => {
+      const [tabId, data] = event.payload;
+      const info = terminalTabs.get(tabId);
+      if (info) {
+        info.term.write(data);
+      }
+    });
+    const unlisten2 = await listen('pty-exit', (event) => {
+      const tabId = event.payload;
+      const info = terminalTabs.get(tabId);
+      if (info) {
+        info.term.writeln('\r\n\x1b[90m[process exited]\x1b[0m');
+      }
+    });
+  } catch (e) {
+    console.error('Failed to set up PTY listeners:', e);
+    // Show error on any active terminal
+    terminalTabs.forEach((info) => {
+      info.term.writeln(`\r\n\x1b[31m[listener setup failed: ${e}]\x1b[0m`);
+    });
+  }
 }
 setupPtyListeners();
 

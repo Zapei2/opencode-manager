@@ -90,16 +90,26 @@ impl PtyManager {
 
         let event_id = id.clone();
         let app_clone = app.clone();
+        let child_id = id.clone();
         std::thread::spawn(move || {
+            // Test: emit a debug message to verify event delivery works
+            let _ = app_clone.emit("pty-data", (event_id.clone(), "\x1b[33m[reader thread started]\x1b[0m\r\n".to_string()));
+
             let mut buf = [0u8; 4096];
             loop {
                 match reader.read(&mut buf) {
-                    Ok(0) => break,
+                    Ok(0) => {
+                        let _ = app_clone.emit("pty-data", (event_id.clone(), "\x1b[33m[EOF received]\x1b[0m\r\n".to_string()));
+                        break;
+                    }
                     Ok(n) => {
                         let data = String::from_utf8_lossy(&buf[..n]).to_string();
                         let _ = app_clone.emit("pty-data", (event_id.clone(), data));
                     }
-                    Err(_) => break,
+                    Err(e) => {
+                        let _ = app_clone.emit("pty-data", (event_id.clone(), format!("\x1b[31m[read error: {}]\x1b[0m\r\n", e)));
+                        break;
+                    }
                 }
             }
             let _ = app_clone.emit("pty-exit", event_id.clone());
@@ -111,7 +121,12 @@ impl PtyManager {
             child,
             id: id.clone(),
         };
+        let emit_id = id.clone();
         self.instances.lock().map_err(|e| e.to_string())?.insert(id, instance);
+
+        // Test: emit a debug event directly (not from thread) to verify event delivery
+        let _ = app.emit("pty-data", (emit_id, "\x1b[36m[spawn: event test from main thread]\x1b[0m\r\n".to_string()));
+
         Ok(())
     }
 
