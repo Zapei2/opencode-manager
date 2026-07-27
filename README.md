@@ -1,8 +1,8 @@
 # OpenCode Manager
 
-A desktop companion for [OpenCode](https://opencode.ai) that makes session management visual and efficient.
+A desktop companion for [OpenCode](https://opencode.ai) — visually manage sessions **and launch them in an embedded terminal**, solving the problem where OpenCode's official desktop app can't sync TUI session history.
 
-> **Prerequisite**: [OpenCode](https://opencode.ai) must be installed on your system. This tool reads OpenCode's local database and uses `opencode -s <id>` to resume sessions.
+> **Prerequisite**: [OpenCode](https://opencode.ai) must be installed on your system.
 
 > 🇨🇳 [中文](README.zh.md)
 
@@ -10,16 +10,28 @@ A desktop companion for [OpenCode](https://opencode.ai) that makes session manag
 
 ## Why This?
 
-OpenCode's built-in TUI is great for coding but offers no way to **visually browse, organize, or batch-manage** sessions. Over time, your session list grows into a long, undifferentiated wall of text — making it hard to clean up old projects, archive finished work, or find that one conversation from last week.
+OpenCode's built-in TUI is great for coding, but session management is limited:
 
-OpenCode Manager gives you a proper desktop interface to:
+- **No visual browser** — sessions are a flat list with no directory tree or search
+- **No batch operations** — can't bulk delete, archive, or move sessions
+- **Desktop app can't sync TUI history** — the official desktop app and TUI use separate session databases, so sessions created in the TUI don't appear in the desktop app and vice versa
 
-- **See everything at a glance** — sessions in a sortable table, organized by directory tree
-- **Bulk delete, archive, move, or rename** — select multiple sessions at once (click, shift-click, or drag)
+OpenCode Manager solves all three:
+
+### Session Manager
+- **See everything at a glance** — sortable table organized by directory tree
+- **Bulk delete, archive, move, or rename** — select multiple sessions at once
 - **Find anything fast** — real-time search by title or directory path
-- **Clean up with confidence** — archive old sessions instead of losing them; backup before deletion
+- **Clean up with confidence** — archive old sessions; backup before deletion
 
-It reads your local OpenCode database directly. No server, no sync, no configuration.
+### Session Launcher
+- **Embedded terminal** — double-click any session to launch it directly inside the app window via `opencode -s <id>`, no external terminal needed
+- **Tabbed interface** — open multiple sessions in tabs, switch between them instantly
+- **Theme-aware** — terminal follows the app's dark/light theme, including TUI color scheme detection
+- **Non-destructive navigation** — switch back to the session list without closing running terminals
+
+### Database Sync Fix
+OpenCode uses different database files depending on the installation channel (e.g., `opencode.db` vs `opencode-master.db`). OpenCode Manager automatically detects the correct database and sets `OPENCODE_DISABLE_CHANNEL_DB=true` in the embedded terminal, ensuring that sessions launched from the app use the **same database** the app reads from — no more "Session not found" errors.
 
 ## Prerequisites
 
@@ -68,6 +80,7 @@ sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev
 | Desktop | [Tauri v2](https://v2.tauri.app) |
 | Backend | Rust |
 | Database | SQLite (rusqlite) |
+| Terminal | [xterm.js](https://xtermjs.org) + [portable-pty](https://github.com/wez/portable-pty) |
 | Frontend | HTML/CSS/JS + Vite |
 
 ## License

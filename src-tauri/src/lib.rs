@@ -194,8 +194,9 @@ fn pty_spawn(
     cwd: Option<String>,
     cols: Option<u16>,
     rows: Option<u16>,
+    dark_mode: Option<bool>,
 ) -> Result<(), String> {
-    state.spawn(app, tab_id, program, args, cwd, cols.unwrap_or(80), rows.unwrap_or(24))
+    state.spawn(app, tab_id, program, args, cwd, cols.unwrap_or(80), rows.unwrap_or(24), dark_mode.unwrap_or(false))
 }
 
 #[tauri::command]

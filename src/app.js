@@ -330,6 +330,7 @@ async function openInTerminalSelected() {
     cursorBlink: true,
     scrollback: 10000,
     lineHeight: 1.2,
+    allowProposedApi: true,
     theme: isDark
       ? { background: '#1e1e2e', foreground: '#cdd6f4', cursor: '#cdd6f4', selectionBackground: '#2a2a3e' }
       : { background: '#ffffff', foreground: '#1e293b', cursor: '#1e293b', selectionBackground: '#eef2ff' },
@@ -362,7 +363,7 @@ async function openInTerminalSelected() {
 
   try {
     await setupPtyListeners();
-    await invoke('pty_spawn', { tabId, program: 'opencode', args: ['-s', sessionId], cwd: dir || null, cols, rows });
+    await invoke('pty_spawn', { tabId, program: 'opencode', args: ['-s', sessionId], cwd: dir || null, cols, rows, darkMode: isDark });
   } catch (e) {
     term.writeln(`\r\n\x1b[31mError: ${e}\x1b[0m`);
   }

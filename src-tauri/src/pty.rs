@@ -31,6 +31,7 @@ impl PtyManager {
         cwd: Option<String>,
         cols: u16,
         rows: u16,
+        dark_mode: bool,
     ) -> Result<(), String> {
         let pty_system = native_pty_system();
         let pair = pty_system
@@ -69,6 +70,9 @@ impl PtyManager {
         // Ensure essential env vars are set
         cmd.env("TERM", "xterm-256color");
         cmd.env("OPENCODE_DISABLE_CHANNEL_DB", "true");
+        // Tell TUI apps about terminal color scheme so they pick the right theme
+        // COLORFGBG format: "foreground;background" (15;0 = light-on-dark, 0;15 = dark-on-light)
+        cmd.env("COLORFGBG", if dark_mode { "15;0" } else { "0;15" });
         if let Some(home) = dirs_next::home_dir() {
             cmd.env("HOME", home.to_string_lossy().to_string());
             let path = format!("{}/.local/bin:/usr/local/bin:/usr/bin:/bin", home.to_string_lossy());
