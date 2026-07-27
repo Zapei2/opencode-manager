@@ -1,4 +1,5 @@
 :root {
+  --app-font-size: 14px;
   --bg: #f8fafc;
   --surface: #ffffff;
   --sidebar-bg: #ffffff;
@@ -38,7 +39,7 @@
 
 body {
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: var(--app-font-size);
   color: var(--text);
   background: var(--surface);
   overflow: hidden;
@@ -104,6 +105,22 @@ body {
 .archive-btn { color: var(--warning); }
 .refresh-btn { color: var(--info); }
 .backup-btn { color: #8b5cf6; }
+.new-session-btn { color: var(--accent); font-weight: 600; }
+
+#terminal-switch-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: transparent;
+  font-size: 13px;
+  font-family: var(--font-sans);
+  color: var(--accent);
+  cursor: pointer;
+  white-space: nowrap;
+  font-weight: 600;
+}
+#terminal-switch-btn:hover { background: var(--selection); }
+#terminal-switch-btn.hidden { display: none; }
 
 .link-btn {
   padding: 2px 6px;
@@ -217,7 +234,7 @@ body {
 #table-header {
   display: flex;
   border-bottom: 2px solid var(--accent);
-  font-size: 13px;
+  font-size: 0.92em;
   font-weight: 700;
   color: var(--text-secondary);
   background: var(--bg);
@@ -233,7 +250,7 @@ body {
 .table-row {
   display: flex;
   border-bottom: 1px solid var(--border);
-  font-size: 14px;
+  font-size: inherit;
   cursor: pointer;
 }
 .table-row:hover { background: var(--selection); }

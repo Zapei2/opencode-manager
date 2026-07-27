@@ -30,6 +30,7 @@
       <div id="toolbar-right">
         <button class="link-btn" data-action="selectAll">全选</button>
         <button class="link-btn" data-action="deselect">取消选择</button>
+        <button id="terminal-switch-btn" class="hidden" title="切换到终端">🖥 终端 (<span id="terminal-tab-count">0</span>)</button>
         <button id="settings-btn" title="设置">⚙</button>
       </div>
     </div>
@@ -77,18 +78,27 @@
 
   <!-- Context menu -->
   <div id="context-menu" class="context-menu hidden">
-    <div class="menu-item" data-action="rename">重命名</div>
-    <div class="menu-item" data-action="copy">复制</div>
-    <div class="menu-item paste-item" data-action="paste">粘贴</div>
-    <div class="menu-item" data-action="move">移动</div>
-    <div class="menu-divider"></div>
-    <div class="menu-item" data-action="archive">归档</div>
-    <div class="menu-item" data-action="delete">删除</div>
-    <div class="menu-divider"></div>
-    <div class="menu-item" data-action="copyId">复制会话 ID</div>
-    <div class="menu-item" data-action="detail">查看详情</div>
-    <div class="menu-divider"></div>
-    <div class="menu-item" data-action="openTerminal">在终端中打开</div>
+    <div class="menu-item" data-action="newSession">✚ 新建会话</div>
+    <div class="session-menu-items">
+      <div class="menu-divider"></div>
+      <div class="menu-item" data-action="rename">重命名</div>
+      <div class="menu-item" data-action="copy">复制</div>
+      <div class="menu-item paste-item" data-action="paste">粘贴</div>
+      <div class="menu-item" data-action="move">移动</div>
+      <div class="menu-divider"></div>
+      <div class="menu-item" data-action="archive">归档</div>
+      <div class="menu-item" data-action="delete">删除</div>
+      <div class="menu-divider"></div>
+      <div class="menu-item" data-action="copyId">复制会话 ID</div>
+      <div class="menu-item" data-action="detail">查看详情</div>
+      <div class="menu-divider"></div>
+      <div class="menu-item" data-action="openTerminal">在终端中打开</div>
+    </div>
+  </div>
+
+  <!-- Tree context menu -->
+  <div id="tree-context-menu" class="context-menu hidden">
+    <div class="menu-item" data-action="newSession">✚ 新建会话</div>
   </div>
 
   <!-- Dialogs -->

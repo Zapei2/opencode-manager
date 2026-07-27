@@ -5,13 +5,17 @@ import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 
 const LANG_KEY = 'opencode_manager_lang';
+const FONT_SIZE_KEY = 'opencode_manager_fontsize';
 let lang = localStorage.getItem(LANG_KEY) || 'en';
+let appFontSize = parseInt(localStorage.getItem(FONT_SIZE_KEY)) || 14;
 
 const translations = {
   zh: {
     title: 'OpenCode Manager', search: '搜索会话...', showArchived: '显示已归档',
     rename: '重命名', copy: '复制', paste: '粘贴', move: '移动', archive: '归档', del: '删除',
     refresh: '刷新', backup: '备份', selectAll: '全选', deselect: '取消选择', settings: '设置',
+    newSession: '新建会话', terminal: '终端',
+    fontSizeLabel: '字体大小',
     directory: '目录', allSessions: '所有会话', allDirs: '所有目录', noDir: '无目录', loading: '加载中...',
     hint: 'Ctrl+A 全选 · 双击重命名 · 右键菜单',
     newTitle: '新标题:', newDir: '新目录路径:',
@@ -32,6 +36,8 @@ const translations = {
     title: 'OpenCode Manager', search: 'Search sessions...', showArchived: 'Show archived',
     rename: 'Rename', copy: 'Copy', paste: 'Paste', move: 'Move', archive: 'Archive', del: 'Delete',
     refresh: 'Refresh', backup: 'Backup', selectAll: 'Select All', deselect: 'Deselect', settings: 'Settings',
+    newSession: 'New Session', terminal: 'Terminal',
+    fontSizeLabel: 'Font Size',
     directory: 'Directory', allSessions: 'All Sessions', allDirs: 'All Directories', noDir: 'No Directory', loading: 'Loading...',
     hint: 'Ctrl+A Select All · Double-click Rename · Right-click Menu',
     newTitle: 'New title:', newDir: 'New directory path:',
@@ -52,6 +58,10 @@ const translations = {
 
 function t(key) { return translations[lang][key] || key; }
 
+function applyFontSize() {
+  document.documentElement.style.setProperty('--app-font-size', appFontSize + 'px');
+}
+
 function setLanguage(newLang) {
   lang = newLang; localStorage.setItem(LANG_KEY, newLang);
   document.title = t('title'); updateUIStrings();
@@ -63,6 +73,7 @@ function updateUIStrings() {
   document.getElementById('search').placeholder = t('search');
   document.getElementById('showArchivedLabel').textContent = t('showArchived');
   document.querySelectorAll('.tool-btn[data-action="rename"]').forEach(b => b.textContent = '✏  ' + t('rename'));
+  document.querySelectorAll('.tool-btn[data-action="newSession"]').forEach(b => b.textContent = '✚  ' + t('newSession'));
   document.querySelectorAll('.tool-btn[data-action="copy"]').forEach(b => b.textContent = '📋  ' + t('copy'));
   document.querySelectorAll('.tool-btn[data-action="paste"]').forEach(b => b.textContent = '📌  ' + t('paste'));
   document.querySelectorAll('.tool-btn[data-action="move"]').forEach(b => b.textContent = '📦  ' + t('move'));
@@ -83,6 +94,7 @@ function updateUIStrings() {
   document.querySelectorAll('.menu-item[data-action="copyId"]').forEach(b => b.textContent = t('copyId'));
   document.querySelectorAll('.menu-item[data-action="detail"]').forEach(b => b.textContent = t('detail'));
   document.querySelectorAll('.menu-item[data-action="openTerminal"]').forEach(b => b.textContent = t('openTerminal'));
+  document.querySelectorAll('.menu-item[data-action="newSession"]').forEach(b => b.textContent = '✚ ' + t('newSession'));
   const h = { 'th-title': 'hTitle', 'th-dir': 'hDir', 'th-msg': 'hMsg', 'th-tokens': 'hTokens', 'th-agent': 'hAgent', 'th-provider': 'hProvider', 'th-model': 'hModel', 'th-time': 'hTime' };
   Object.entries(h).forEach(([cls, key]) => document.querySelectorAll('.' + cls).forEach(el => el.textContent = t(key)));
   updateStatus();
@@ -95,6 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.title = t('title'); updateUIStrings();
   const savedTheme = localStorage.getItem('opencode_manager_theme');
   if (savedTheme === 'dark') document.body.classList.add('dark');
+  applyFontSize();
   await refreshAll(); setupEventListeners();
 });
 
@@ -118,6 +131,11 @@ async function renderTree() {
     tree.innerHTML = '<div class="tree-children" style="padding-left:0"><div class="dir-container"><span class="tree-node" data-prefix="">📁  ' + t('allSessions') + '</span></div></div>';
     const rootNode = tree.querySelector('.tree-node');
     rootNode.addEventListener('click', () => selectTreeNode(rootNode, ''));
+    rootNode.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      selectTreeNode(rootNode, '');
+      showTreeContextMenu(e, '');
+    });
     const container = tree.querySelector('.tree-children');
     nodes.forEach(n => container.appendChild(renderDirNode(n)));
     const count = allSessions.length;
@@ -139,6 +157,12 @@ function renderDirNode(node) {
   const hasKids = node.children?.length > 0;
   lbl.innerHTML = (hasKids ? '📂' : '📁') + '  ' + node.name + (node.session_count > 0 ? '  <span class="tree-count">' + node.session_count + '</span>' : '');
   lbl.addEventListener('click', (e) => { e.stopPropagation(); selectTreeNode(lbl, node.full_path); });
+  lbl.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    selectTreeNode(lbl, node.full_path);
+    showTreeContextMenu(e, node.full_path);
+  });
   c.appendChild(lbl);
   if (hasKids) {
     const kids = document.createElement('div'); kids.className = 'tree-children'; kids.style.display = 'none';
@@ -298,13 +322,24 @@ async function openInTerminalSelected() {
   const dir = session.directory || '';
   const sessionId = session.id;
   const title = session.title || sessionId;
+  await openTerminalTab(sessionId, title, dir, ['-s', sessionId]);
+}
 
+async function createNewSession(dir) {
+  const cwd = dir || null;
+  const title = dir ? shortDir(dir) : 'new session';
+  await openTerminalTab(null, title, cwd, []);
+}
+
+async function openTerminalTab(sessionId, title, cwd, extraArgs) {
   // If a terminal tab for this session already exists, just switch to it
-  for (const [existingId, info] of terminalTabs) {
-    if (info.sessionId === sessionId) {
-      showTerminalView();
-      switchTab(existingId);
-      return;
+  if (sessionId) {
+    for (const [existingId, info] of terminalTabs) {
+      if (info.sessionId === sessionId) {
+        showTerminalView();
+        switchTab(existingId);
+        return;
+      }
     }
   }
 
@@ -323,9 +358,8 @@ async function openInTerminalSelected() {
   terminalTabs.forEach((info) => { info.el.style.display = 'none'; });
 
   const isDark = document.body.classList.contains('dark');
-  const baseFontSize = 14;
   const term = new Terminal({
-    fontSize: baseFontSize,
+    fontSize: appFontSize,
     fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Source Code Pro', monospace",
     cursorBlink: true,
     scrollback: 10000,
@@ -350,6 +384,7 @@ async function openInTerminalSelected() {
   });
 
   addTabButton(tabId, title);
+  updateTerminalSwitchBtn();
   activeTabId = tabId;
   document.querySelectorAll('.terminal-tab').forEach(t => {
     t.classList.toggle('active', t.dataset.tabId === tabId);
@@ -363,7 +398,7 @@ async function openInTerminalSelected() {
 
   try {
     await setupPtyListeners();
-    await invoke('pty_spawn', { tabId, program: 'opencode', args: ['-s', sessionId], cwd: dir || null, cols, rows, darkMode: isDark });
+    await invoke('pty_spawn', { tabId, program: 'opencode', args: extraArgs, cwd: cwd || null, cols, rows, darkMode: isDark });
   } catch (e) {
     term.writeln(`\r\n\x1b[31mError: ${e}\x1b[0m`);
   }
@@ -408,6 +443,7 @@ function closeTab(tabId) {
   }
   terminalTabs.delete(tabId);
   document.querySelector(`.terminal-tab[data-tab-id="${tabId}"]`)?.remove();
+  updateTerminalSwitchBtn();
   if (activeTabId === tabId) {
     const next = terminalTabs.keys().next();
     if (next.done) {
@@ -424,6 +460,18 @@ function showTerminalView() {
 
 function hideTerminalView() {
   document.getElementById('terminal-view').classList.add('hidden');
+  updateTerminalSwitchBtn();
+}
+
+function updateTerminalSwitchBtn() {
+  const btn = document.getElementById('terminal-switch-btn');
+  const count = terminalTabs.size;
+  if (count > 0) {
+    btn.classList.remove('hidden');
+    document.getElementById('terminal-tab-count').textContent = count;
+  } else {
+    btn.classList.add('hidden');
+  }
 }
 
 function escapeHtml(s) {
@@ -465,10 +513,22 @@ document.getElementById('terminal-back-btn').addEventListener('click', () => {
   hideTerminalView();
 });
 
+// Terminal switch button - show terminal view from session list
+document.getElementById('terminal-switch-btn').addEventListener('click', () => {
+  if (terminalTabs.size > 0) {
+    showTerminalView();
+    if (activeTabId) {
+      const info = terminalTabs.get(activeTabId);
+      if (info) { setTimeout(() => { info.fitAddon.fit(); info.term.focus(); }, 50); }
+    }
+  }
+});
+
 // Close all button - kill all PTY sessions and hide
 document.getElementById('terminal-close-all-btn').addEventListener('click', () => {
   terminalTabs.forEach((_, id) => closeTab(id));
   hideTerminalView();
+  updateTerminalSwitchBtn();
 });
 
 // Resize handling - fit terminal to container
@@ -488,7 +548,23 @@ function showContextMenu(e, session) {
   const menu = document.getElementById('context-menu');
   menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
   menu.classList.remove('hidden');
-  menu.querySelector('.paste-item').style.display = clipboardIds.length ? '' : 'none';
+  const sessionItems = menu.querySelector('.session-menu-items');
+  const pasteItem = menu.querySelector('.paste-item');
+  if (session) {
+    // Full menu with session actions
+    sessionItems.style.display = '';
+    if (pasteItem) pasteItem.style.display = clipboardIds.length ? '' : 'none';
+  } else {
+    // Empty space click — only show "新建会话"
+    sessionItems.style.display = 'none';
+  }
+}
+
+function showTreeContextMenu(e, dir) {
+  const menu = document.getElementById('tree-context-menu');
+  menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
+  menu.classList.remove('hidden');
+  menu.dataset.dir = dir;
 }
 
 function showWarning(msg) { alert(msg); }
@@ -542,6 +618,12 @@ function openSettings() {
       <label style="margin-right:20px"><input type="radio" name="lang" value="en" ${lang === 'en' ? 'checked' : ''} /> ${t('langEn')}</label>
       <label><input type="radio" name="lang" value="zh" ${lang === 'zh' ? 'checked' : ''} /> ${t('langZh')}</label>
     </div>
+    <div class="settings-section"><div class="settings-title">${t('fontSizeLabel')}</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+        <input type="range" id="fontsize-slider" min="10" max="24" value="${appFontSize}" style="flex:1;accent-color:var(--accent)" />
+        <span id="fontsize-value" style="font-size:13px;min-width:40px;text-align:center">${appFontSize}px</span>
+      </div>
+    </div>
     <div class="settings-section"><div class="settings-title">${t('terminalLabel')}</div>
       <input type="text" id="terminal-input" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:var(--font-sans);outline:none;margin-top:6px" placeholder="${t('terminalPlaceholder')}" value="${localStorage.getItem('opencode_manager_terminal') || ''}" />
     </div>
@@ -565,6 +647,20 @@ function openSettings() {
     if (input) localStorage.setItem('opencode_manager_terminal', input.value.trim());
     closeDialog();
   };
+  const fontSlider = document.getElementById('fontsize-slider');
+  if (fontSlider) {
+    fontSlider.addEventListener('input', () => {
+      appFontSize = parseInt(fontSlider.value);
+      document.getElementById('fontsize-value').textContent = appFontSize + 'px';
+      applyFontSize();
+      localStorage.setItem(FONT_SIZE_KEY, appFontSize);
+      // Update active terminal font size live
+      terminalTabs.forEach((info) => {
+        info.term.options.fontSize = appFontSize;
+        setTimeout(() => info.fitAddon.fit(), 50);
+      });
+    });
+  }
   document.querySelectorAll('input[name="theme"]').forEach(r => {
     r.addEventListener('change', () => { document.body.classList.toggle('dark', r.value === 'dark'); localStorage.setItem('opencode_manager_theme', r.value); });
   });
@@ -595,7 +691,7 @@ function setupEventListeners() {
   if (allCheck) allCheck.addEventListener('change', (e) => { e.target.checked ? selectAll() : clearSelection(); });
   document.querySelectorAll('.tool-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const m = { rename: renameSelected, copy: copySelected, paste: pasteSelected, move: moveSelected, archive: archiveSelected, delete: deleteSelected, refresh: refreshAll, backup: backupDb };
+      const m = { newSession: createNewSession, rename: renameSelected, copy: copySelected, paste: pasteSelected, move: moveSelected, archive: archiveSelected, delete: deleteSelected, refresh: refreshAll, backup: backupDb };
       if (m[btn.dataset.action]) m[btn.dataset.action]();
     });
   });
@@ -607,13 +703,30 @@ function setupEventListeners() {
   });
   document.getElementById('settings-btn').addEventListener('click', openSettings);
   setupColumnResize();
-  document.addEventListener('click', () => document.getElementById('context-menu').classList.add('hidden'));
+
+  // Right-click on empty table area -> show "新建会话" only
+  document.getElementById('table-body').addEventListener('contextmenu', (e) => {
+    if (e.target.closest('.table-row')) return;
+    e.preventDefault();
+    showContextMenu(e, null);
+  });
+  document.addEventListener('click', () => {
+    document.getElementById('context-menu').classList.add('hidden');
+    document.getElementById('tree-context-menu').classList.add('hidden');
+  });
   document.getElementById('context-menu').addEventListener('click', (e) => {
     const item = e.target.closest('.menu-item');
     if (!item) return;
     document.getElementById('context-menu').classList.add('hidden');
-    const m = { rename: renameSelected, copy: copySelected, paste: pasteSelected, move: moveSelected, archive: archiveSelected, delete: deleteSelected, copyId: copyIdSelected, detail: showDetailSelected, openTerminal: openInTerminalSelected };
+    const m = { newSession: () => createNewSession(dirPrefix), rename: renameSelected, copy: copySelected, paste: pasteSelected, move: moveSelected, archive: archiveSelected, delete: deleteSelected, copyId: copyIdSelected, detail: showDetailSelected, openTerminal: openInTerminalSelected };
     if (m[item.dataset.action]) m[item.dataset.action]();
+  });
+  document.getElementById('tree-context-menu').addEventListener('click', (e) => {
+    const item = e.target.closest('.menu-item');
+    if (!item) return;
+    document.getElementById('tree-context-menu').classList.add('hidden');
+    const dir = document.getElementById('tree-context-menu').dataset.dir;
+    if (item.dataset.action === 'newSession') createNewSession(dir || null);
   });
 }
 
