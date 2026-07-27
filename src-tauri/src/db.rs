@@ -20,16 +20,19 @@ impl Database {
         // opencode picks the DB file based on installation channel
         // (e.g. "master" -> opencode-master.db), so we must ask it
         // rather than hardcoding "opencode.db".
-        // IMPORTANT: prepend ~/.local/bin to PATH so we find the same
-        // opencode binary the user uses in their shell, not a different
-        // system-wide installation that might use a different DB.
-        let local_bin = home.join(".local/bin");
-        let clean_path = format!("{}:/usr/local/bin:/usr/bin:/bin", local_bin.to_string_lossy());
-        if let Ok(output) = std::process::Command::new("opencode")
+        // IMPORTANT: Rust's Command::new("opencode") resolves the binary
+        // using the PARENT process PATH, not .env("PATH"). On desktop launch,
+        // ~/.local/bin is typically NOT in PATH, so we must use the full path.
+        let local_bin = home.join(".local/bin/opencode");
+        let opencode_bin = if local_bin.exists() {
+            local_bin.to_string_lossy().to_string()
+        } else {
+            "opencode".to_string()
+        };
+        if let Ok(output) = std::process::Command::new(&opencode_bin)
             .arg("db")
             .arg("path")
             .env_remove("OPENCODE_DISABLE_CHANNEL_DB")
-            .env("PATH", &clean_path)
             .output()
         {
             if output.status.success() {
@@ -281,13 +284,16 @@ impl Database {
 
     fn current_db_path(data_dir: &Path) -> Result<std::path::PathBuf, String> {
         let home = dirs_next::home_dir().ok_or("Cannot find home dir")?;
-        let local_bin = home.join(".local/bin");
-        let clean_path = format!("{}:/usr/local/bin:/usr/bin:/bin", local_bin.to_string_lossy());
-        if let Ok(output) = std::process::Command::new("opencode")
+        let local_bin = home.join(".local/bin/opencode");
+        let opencode_bin = if local_bin.exists() {
+            local_bin.to_string_lossy().to_string()
+        } else {
+            "opencode".to_string()
+        };
+        if let Ok(output) = std::process::Command::new(&opencode_bin)
             .arg("db")
             .arg("path")
             .env_remove("OPENCODE_DISABLE_CHANNEL_DB")
-            .env("PATH", &clean_path)
             .output()
         {
             if output.status.success() {
