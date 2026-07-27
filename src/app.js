@@ -299,6 +299,15 @@ async function openInTerminalSelected() {
   const sessionId = session.id;
   const title = session.title || sessionId;
 
+  // If a terminal tab for this session already exists, just switch to it
+  for (const [existingId, info] of terminalTabs) {
+    if (info.sessionId === sessionId) {
+      showTerminalView();
+      switchTab(existingId);
+      return;
+    }
+  }
+
   const tabId = `tab_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 
   // Show terminal view and create element FIRST, so xterm can measure dimensions
@@ -449,8 +458,13 @@ async function setupPtyListeners() {
 }
 setupPtyListeners();
 
-// Back button
+// Back button - hide terminal view but keep PTY sessions running
 document.getElementById('terminal-back-btn').addEventListener('click', () => {
+  hideTerminalView();
+});
+
+// Close all button - kill all PTY sessions and hide
+document.getElementById('terminal-close-all-btn').addEventListener('click', () => {
   terminalTabs.forEach((_, id) => closeTab(id));
   hideTerminalView();
 });

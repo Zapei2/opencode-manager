@@ -474,15 +474,34 @@ body {
   margin-left: 8px;
 }
 #terminal-back-btn:hover { color: var(--text); border-color: var(--text-secondary); }
+#terminal-close-all-btn {
+  padding: 4px 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--danger);
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  margin-left: 4px;
+}
+#terminal-close-all-btn:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
 #terminal-container {
   flex: 1;
   overflow: hidden;
   position: relative;
 }
 #terminal-container .xterm {
-  padding: 8px;
+  padding: 4px;
   height: 100%;
+  position: relative;
 }
 #terminal-container .xterm-viewport {
   overflow-y: auto !important;
+}
+/* Fix IME composition window position */
+#terminal-container .xterm-helper-textarea {
+  position: absolute !important;
+  opacity: 0 !important;
+  z-index: -10 !important;
 }
