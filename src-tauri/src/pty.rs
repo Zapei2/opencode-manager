@@ -70,13 +70,25 @@ impl PtyManager {
         // Ensure essential env vars are set
         cmd.env("TERM", "xterm-256color");
         cmd.env("OPENCODE_DISABLE_CHANNEL_DB", "true");
-        // Tell TUI apps about terminal color scheme so they pick the right theme
-        // COLORFGBG format: "foreground;background" (15;0 = light-on-dark, 0;15 = dark-on-light)
-        cmd.env("COLORFGBG", if dark_mode { "15;0" } else { "0;15" });
         if let Some(home) = dirs_next::home_dir() {
             cmd.env("HOME", home.to_string_lossy().to_string());
             let path = format!("{}/.local/bin:/usr/local/bin:/usr/bin:/bin", home.to_string_lossy());
             cmd.env("PATH", path);
+
+            // Set OpenCode TUI theme mode by modifying kv.json
+            // The TUI reads theme_mode_lock from kv.json on startup
+            let kv_path = home.join(".local/state/opencode/kv.json");
+            let mode = if dark_mode { "dark" } else { "light" };
+            let content = std::fs::read_to_string(&kv_path).unwrap_or_else(|_| "{}".to_string());
+            if let Ok(mut json) = serde_json::from_str::<serde_json::Value>(&content) {
+                if let Some(obj) = json.as_object_mut() {
+                    obj.insert("theme_mode_lock".to_string(), serde_json::Value::String(mode.to_string()));
+                    obj.insert("theme_mode".to_string(), serde_json::Value::String(mode.to_string()));
+                    if let Ok(pretty) = serde_json::to_string_pretty(&json) {
+                        let _ = std::fs::write(&kv_path, pretty);
+                    }
+                }
+            }
         }
 
         let child = pair
