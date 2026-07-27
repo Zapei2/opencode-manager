@@ -1,10 +1,12 @@
 mod db;
 mod models;
+mod pty;
 
 use db::Database;
 use models::*;
+use pty::PtyManager;
 use std::sync::Mutex;
-use tauri::State;
+use tauri::{State, AppHandle};
 
 struct AppState {
     db: Database,
@@ -182,6 +184,35 @@ fn open_in_terminal(directory: String, terminal: String, session_id: String) -> 
     Ok(())
 }
 
+#[tauri::command]
+fn pty_spawn(
+    app: AppHandle,
+    state: State<'_, PtyManager>,
+    tab_id: String,
+    program: String,
+    args: Vec<String>,
+    cwd: Option<String>,
+    cols: Option<u16>,
+    rows: Option<u16>,
+) -> Result<(), String> {
+    state.spawn(app, tab_id, program, args, cwd, cols.unwrap_or(80), rows.unwrap_or(24))
+}
+
+#[tauri::command]
+fn pty_write(state: State<'_, PtyManager>, tab_id: String, data: Vec<u8>) -> Result<(), String> {
+    state.write(&tab_id, &data)
+}
+
+#[tauri::command]
+fn pty_resize(state: State<'_, PtyManager>, tab_id: String, cols: u16, rows: u16) -> Result<(), String> {
+    state.resize(&tab_id, cols, rows)
+}
+
+#[tauri::command]
+fn pty_kill(state: State<'_, PtyManager>, tab_id: String) -> Result<(), String> {
+    state.kill(&tab_id)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let database = Database::open().expect("Failed to open database");
@@ -189,6 +220,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .manage(Mutex::new(AppState { db: database }))
+        .manage(PtyManager::new())
         .invoke_handler(tauri::generate_handler![
             list_sessions,
             build_tree,
@@ -199,6 +231,10 @@ pub fn run() {
             delete_session,
             backup_database,
             open_in_terminal,
+            pty_spawn,
+            pty_write,
+            pty_resize,
+            pty_kill,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,4 +1,8 @@
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
+import { Terminal } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
+import '@xterm/xterm/css/xterm.css';
 
 const LANG_KEY = 'opencode_manager_lang';
 let lang = localStorage.getItem(LANG_KEY) || 'en';
@@ -283,16 +287,158 @@ function showDetailSelected() {
   showInfo(`ID: ${x.id}\nTitle: ${x.title}\nSlug: ${x.slug}\nDirectory: ${x.directory}\nMessages: ${x.message_count}\nCreated: ${x.time_created}\nUpdated: ${x.time_updated}\nTokens: ${formatTokens((x.tokens_input || 0) + (x.tokens_output || 0))}\nAgent: ${x.agent || '-'}\nModel: ${x.model || '-'}`);
 }
 
+// ── Embedded terminal (tabbed overlay) ──
+const terminalTabs = new Map();
+let activeTabId = null;
+
 async function openInTerminalSelected() {
   const s = getSelectedSessions();
   if (s.length !== 1) return;
-  const dir = s[0].directory || '';
-  const sessionId = s[0].id;
-  const term = localStorage.getItem('opencode_manager_terminal') || '';
+  const session = s[0];
+  const dir = session.directory || '';
+  const sessionId = session.id;
+  const title = session.title || sessionId;
+
+  const tabId = `tab_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+
+  const term = new Terminal({
+    fontSize: 14,
+    fontFamily: 'monospace',
+    cursorBlink: true,
+    scrollback: 10000,
+  });
+  const fitAddon = new FitAddon();
+  term.loadAddon(fitAddon);
+
+  term.onData((data) => {
+    invoke('pty_write', { tabId, data: Array.from(data, c => c.charCodeAt(0)) });
+  });
+
+  const container = document.getElementById('terminal-container');
+  const termEl = document.createElement('div');
+  termEl.id = `term-${tabId}`;
+  termEl.style.height = '100%';
+  termEl.style.display = 'none';
+  container.appendChild(termEl);
+  term.open(termEl);
+  fitAddon.fit();
+
+  terminalTabs.set(tabId, {
+    tabId, sessionId, title, term, fitAddon, el: termEl,
+  });
+
+  addTabButton(tabId, title);
+  switchTab(tabId);
+  showTerminalView();
+
+  const cols = term.cols;
+  const rows = term.rows;
+  const program = 'opencode';
+  const args = ['-s', sessionId];
+
   try {
-    await invoke('open_in_terminal', { directory: dir, terminal: term, sessionId });
-  } catch (e) { showError('Open terminal failed', e); }
+    await invoke('pty_spawn', { tabId, program, args, cwd: dir || null, cols, rows });
+  } catch (e) {
+    term.writeln(`\r\nError: ${e}`);
+  }
 }
+
+function addTabButton(tabId, title) {
+  const list = document.getElementById('terminal-tabs-list');
+  const btn = document.createElement('div');
+  btn.className = 'terminal-tab';
+  btn.dataset.tabId = tabId;
+  btn.innerHTML = `<span class="tab-title">${escapeHtml(title)}</span><span class="tab-close">×</span>`;
+  btn.addEventListener('click', (e) => {
+    if (e.target.classList.contains('tab-close')) {
+      closeTab(tabId);
+    } else {
+      switchTab(tabId);
+    }
+  });
+  list.appendChild(btn);
+}
+
+function switchTab(tabId) {
+  activeTabId = tabId;
+  document.querySelectorAll('.terminal-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tabId === tabId);
+  });
+  terminalTabs.forEach((info) => {
+    info.el.style.display = info.tabId === tabId ? 'block' : 'none';
+  });
+  const info = terminalTabs.get(tabId);
+  if (info) {
+    setTimeout(() => { info.fitAddon.fit(); info.term.focus(); }, 50);
+  }
+}
+
+function closeTab(tabId) {
+  invoke('pty_kill', { tabId }).catch(() => {});
+  const info = terminalTabs.get(tabId);
+  if (info) {
+    info.term.dispose();
+    info.el.remove();
+  }
+  terminalTabs.delete(tabId);
+  document.querySelector(`.terminal-tab[data-tab-id="${tabId}"]`)?.remove();
+  if (activeTabId === tabId) {
+    const next = terminalTabs.keys().next();
+    if (next.done) {
+      hideTerminalView();
+    } else {
+      switchTab(next.value);
+    }
+  }
+}
+
+function showTerminalView() {
+  document.getElementById('terminal-view').classList.remove('hidden');
+}
+
+function hideTerminalView() {
+  document.getElementById('terminal-view').classList.add('hidden');
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// PTY data event listener
+listen('pty-data', (event) => {
+  const [tabId, data] = event.payload;
+  const info = terminalTabs.get(tabId);
+  if (info) {
+    info.term.write(new Uint8Array(data));
+  }
+});
+
+listen('pty-exit', (event) => {
+  const tabId = event.payload;
+  const info = terminalTabs.get(tabId);
+  if (info) {
+    info.term.writeln('\r\n\x1b[90m[process exited]\x1b[0m');
+  }
+});
+
+// Back button
+document.getElementById('terminal-back-btn').addEventListener('click', () => {
+  terminalTabs.forEach((_, id) => closeTab(id));
+  hideTerminalView();
+});
+
+// Resize handling
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  if (resizeTimer) clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    const info = terminalTabs.get(activeTabId);
+    if (info) {
+      info.fitAddon.fit();
+      invoke('pty_resize', { tabId: activeTabId, cols: info.term.cols, rows: info.term.rows });
+    }
+  }, 200);
+});
 
 function showContextMenu(e, session) {
   const menu = document.getElementById('context-menu');
@@ -440,7 +586,6 @@ function formatTokens(n) {
   return n.toString();
 }
 
-function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
 function setupColumnResize() {
   const header = document.getElementById('table-header');
