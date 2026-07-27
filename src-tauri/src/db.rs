@@ -16,37 +16,13 @@ impl Database {
         let home = dirs_next::home_dir().ok_or("Cannot find home dir")?;
         let data_dir = home.join(".local/share/opencode");
 
-        // Try to get the actual database path from opencode itself.
-        // opencode picks the DB file based on installation channel
-        // (e.g. "master" -> opencode-master.db), so we must ask it
-        // rather than hardcoding "opencode.db".
-        // IMPORTANT: Rust's Command::new("opencode") resolves the binary
-        // using the PARENT process PATH, not .env("PATH"). On desktop launch,
-        // ~/.local/bin is typically NOT in PATH, so we must use the full path.
-        let local_bin = home.join(".local/bin/opencode");
-        let opencode_bin = if local_bin.exists() {
-            local_bin.to_string_lossy().to_string()
-        } else {
-            "opencode".to_string()
-        };
-        if let Ok(output) = std::process::Command::new(&opencode_bin)
-            .arg("db")
-            .arg("path")
-            .env_remove("OPENCODE_DISABLE_CHANNEL_DB")
-            .output()
-        {
-            if output.status.success() {
-                let path_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                if !path_str.is_empty() {
-                    let p = std::path::Path::new(&path_str);
-                    if p.exists() {
-                        return Self::open_path(p);
-                    }
-                }
-            }
-        }
-
-        // Fallback: try opencode.db, then opencode-master.db
+        // Use opencode.db directly. This is the database that contains
+        // sessions with proper directory information (project subdirectories).
+        // The opencode-master.db (used by the "master" channel without
+        // OPENCODE_DISABLE_CHANNEL_DB) stores all sessions with directory=~
+        // because they're created by the server process from the home dir.
+        // We set OPENCODE_DISABLE_CHANNEL_DB=true in the PTY environment
+        // so that `opencode -s <id>` also reads from opencode.db.
         let db_path = data_dir.join("opencode.db");
         if db_path.exists() {
             return Self::open_path(&db_path);
@@ -283,29 +259,6 @@ impl Database {
     }
 
     fn current_db_path(data_dir: &Path) -> Result<std::path::PathBuf, String> {
-        let home = dirs_next::home_dir().ok_or("Cannot find home dir")?;
-        let local_bin = home.join(".local/bin/opencode");
-        let opencode_bin = if local_bin.exists() {
-            local_bin.to_string_lossy().to_string()
-        } else {
-            "opencode".to_string()
-        };
-        if let Ok(output) = std::process::Command::new(&opencode_bin)
-            .arg("db")
-            .arg("path")
-            .env_remove("OPENCODE_DISABLE_CHANNEL_DB")
-            .output()
-        {
-            if output.status.success() {
-                let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                if !s.is_empty() {
-                    let p = std::path::Path::new(&s);
-                    if p.exists() {
-                        return Ok(p.to_path_buf());
-                    }
-                }
-            }
-        }
         let db_path = data_dir.join("opencode.db");
         if db_path.exists() {
             return Ok(db_path);

@@ -68,6 +68,7 @@ impl PtyManager {
         }
         // Ensure essential env vars are set
         cmd.env("TERM", "xterm-256color");
+        cmd.env("OPENCODE_DISABLE_CHANNEL_DB", "true");
         if let Some(home) = dirs_next::home_dir() {
             cmd.env("HOME", home.to_string_lossy().to_string());
             let path = format!("{}/.local/bin:/usr/local/bin:/usr/bin:/bin", home.to_string_lossy());
