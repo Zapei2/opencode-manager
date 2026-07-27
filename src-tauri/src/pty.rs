@@ -42,10 +42,36 @@ impl PtyManager {
             })
             .map_err(|e| format!("Failed to open PTY: {}", e))?;
 
-        let mut cmd = CommandBuilder::new(&program);
-        cmd.args(args);
+        // Build full command string for sh -c
+        let cmd_str = if program == "sh" {
+            // Already a shell command, pass through
+            let mut s = String::new();
+            for (i, a) in args.iter().enumerate() {
+                if i > 0 { s.push(' '); }
+                s.push_str(&shell_quote(a));
+            }
+            s
+        } else {
+            let mut s = shell_quote(&program);
+            for a in &args {
+                s.push(' ');
+                s.push_str(&shell_quote(a));
+            }
+            s
+        };
+
+        let mut cmd = CommandBuilder::new("sh");
+        cmd.arg("-c");
+        cmd.arg(&cmd_str);
         if let Some(dir) = &cwd {
             cmd.cwd(dir);
+        }
+        // Ensure essential env vars are set
+        cmd.env("TERM", "xterm-256color");
+        if let Some(home) = dirs_next::home_dir() {
+            cmd.env("HOME", home.to_string_lossy().to_string());
+            let path = format!("{}/.local/bin:/usr/local/bin:/usr/bin:/bin", home.to_string_lossy());
+            cmd.env("PATH", path);
         }
 
         let child = pair
@@ -131,5 +157,13 @@ impl PtyManager {
             .lock()
             .map(|m| m.keys().cloned().collect())
             .unwrap_or_default()
+    }
+}
+
+fn shell_quote(s: &str) -> String {
+    if s.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-' || c == '/' || c == '.' || c == '=') {
+        s.to_string()
+    } else {
+        format!("'{}'", s.replace('\'', "'\\''"))
     }
 }
