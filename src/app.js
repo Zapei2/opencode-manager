@@ -301,6 +301,18 @@ async function openInTerminalSelected() {
 
   const tabId = `tab_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 
+  // Show terminal view and create element FIRST, so xterm can measure dimensions
+  showTerminalView();
+  const container = document.getElementById('terminal-container');
+  const termEl = document.createElement('div');
+  termEl.id = `term-${tabId}`;
+  termEl.style.height = '100%';
+  termEl.style.width = '100%';
+  container.appendChild(termEl);
+
+  // Hide other tabs
+  terminalTabs.forEach((info) => { info.el.style.display = 'none'; });
+
   const term = new Terminal({
     fontSize: 14,
     fontFamily: 'monospace',
@@ -314,12 +326,6 @@ async function openInTerminalSelected() {
     invoke('pty_write', { tabId, data: Array.from(data, c => c.charCodeAt(0)) });
   });
 
-  const container = document.getElementById('terminal-container');
-  const termEl = document.createElement('div');
-  termEl.id = `term-${tabId}`;
-  termEl.style.height = '100%';
-  termEl.style.display = 'none';
-  container.appendChild(termEl);
   term.open(termEl);
   fitAddon.fit();
 
@@ -328,13 +334,18 @@ async function openInTerminalSelected() {
   });
 
   addTabButton(tabId, title);
-  switchTab(tabId);
-  showTerminalView();
+  activeTabId = tabId;
+  document.querySelectorAll('.terminal-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tabId === tabId);
+  });
+  term.focus();
 
   const cols = term.cols;
   const rows = term.rows;
   const program = 'opencode';
   const args = ['-s', sessionId];
+
+  term.writeln('\x1b[90mStarting opencode...\x1b[0m\r');
 
   try {
     await invoke('pty_spawn', { tabId, program, args, cwd: dir || null, cols, rows });
