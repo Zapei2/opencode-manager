@@ -470,17 +470,13 @@ document.getElementById('terminal-close-all-btn').addEventListener('click', () =
   hideTerminalView();
 });
 
-// Resize handling - scale font with window size and fit terminal
+// Resize handling - fit terminal to container
 let resizeTimer = null;
 window.addEventListener('resize', () => {
   if (resizeTimer) clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
-    // Scale font size based on window dimensions
-    const scaleFactor = Math.min(window.innerWidth / 1320, window.innerHeight / 800);
-    const scaledFontSize = Math.max(10, Math.round(14 * scaleFactor));
     const info = terminalTabs.get(activeTabId);
     if (info) {
-      info.term.options.fontSize = scaledFontSize;
       info.fitAddon.fit();
       invoke('pty_resize', { tabId: activeTabId, cols: info.term.cols, rows: info.term.rows });
     }
