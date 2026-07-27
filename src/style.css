@@ -406,6 +406,7 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
 
 /* ── Terminal overlay ── */
+#terminal-view.hidden { display: none; }
 #terminal-view {
   position: fixed;
   inset: 0;
