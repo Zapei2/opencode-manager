@@ -323,7 +323,7 @@ async function openInTerminalSelected() {
   term.loadAddon(fitAddon);
 
   term.onData((data) => {
-    invoke('pty_write', { tabId, data: Array.from(data, c => c.charCodeAt(0)) });
+    invoke('pty_write', { tabId, data });
   });
 
   term.open(termEl);
@@ -342,15 +342,14 @@ async function openInTerminalSelected() {
 
   const cols = term.cols;
   const rows = term.rows;
-  const program = 'opencode';
-  const args = ['-s', sessionId];
 
   term.writeln('\x1b[90mStarting opencode...\x1b[0m\r');
 
   try {
-    await invoke('pty_spawn', { tabId, program, args, cwd: dir || null, cols, rows });
+    await invoke('pty_spawn', { tabId, program: 'opencode', args: ['-s', sessionId], cwd: dir || null, cols, rows });
+    term.writeln('\x1b[32mpty_spawn OK\x1b[0m\r');
   } catch (e) {
-    term.writeln(`\r\nError: ${e}`);
+    term.writeln(`\r\n\x1b[31mSpawn error: ${e}\x1b[0m`);
   }
 }
 
@@ -416,21 +415,26 @@ function escapeHtml(s) {
 }
 
 // PTY data event listener
-listen('pty-data', (event) => {
-  const [tabId, data] = event.payload;
-  const info = terminalTabs.get(tabId);
-  if (info) {
-    info.term.write(new Uint8Array(data));
-  }
-});
-
-listen('pty-exit', (event) => {
-  const tabId = event.payload;
-  const info = terminalTabs.get(tabId);
-  if (info) {
-    info.term.writeln('\r\n\x1b[90m[process exited]\x1b[0m');
-  }
-});
+let ptyListenersReady = false;
+function setupPtyListeners() {
+  if (ptyListenersReady) return;
+  ptyListenersReady = true;
+  listen('pty-data', (event) => {
+    const [tabId, data] = event.payload;
+    const info = terminalTabs.get(tabId);
+    if (info) {
+      info.term.write(data);
+    }
+  });
+  listen('pty-exit', (event) => {
+    const tabId = event.payload;
+    const info = terminalTabs.get(tabId);
+    if (info) {
+      info.term.writeln('\r\n\x1b[90m[process exited]\x1b[0m');
+    }
+  });
+}
+setupPtyListeners();
 
 // Back button
 document.getElementById('terminal-back-btn').addEventListener('click', () => {

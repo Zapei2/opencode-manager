@@ -199,8 +199,8 @@ fn pty_spawn(
 }
 
 #[tauri::command]
-fn pty_write(state: State<'_, PtyManager>, tab_id: String, data: Vec<u8>) -> Result<(), String> {
-    state.write(&tab_id, &data)
+fn pty_write(state: State<'_, PtyManager>, tab_id: String, data: String) -> Result<(), String> {
+    state.write(&tab_id, data.as_bytes())
 }
 
 #[tauri::command]

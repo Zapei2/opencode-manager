@@ -96,7 +96,7 @@ impl PtyManager {
                 match reader.read(&mut buf) {
                     Ok(0) => break,
                     Ok(n) => {
-                        let data = buf[..n].to_vec();
+                        let data = String::from_utf8_lossy(&buf[..n]).to_string();
                         let _ = app_clone.emit("pty-data", (event_id.clone(), data));
                     }
                     Err(_) => break,
