@@ -313,11 +313,15 @@ async function openInTerminalSelected() {
   // Hide other tabs
   terminalTabs.forEach((info) => { info.el.style.display = 'none'; });
 
+  const isDark = document.body.classList.contains('dark');
   const term = new Terminal({
     fontSize: 14,
     fontFamily: 'monospace',
     cursorBlink: true,
     scrollback: 10000,
+    theme: isDark
+      ? { background: '#1e1e2e', foreground: '#cdd6f4', cursor: '#cdd6f4', selectionBackground: '#2a2a3e' }
+      : { background: '#ffffff', foreground: '#1e293b', cursor: '#1e293b', selectionBackground: '#eef2ff' },
   });
   const fitAddon = new FitAddon();
   term.loadAddon(fitAddon);
